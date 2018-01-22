@@ -25,6 +25,7 @@ It is customisable while still allowing the process to be quick and automating m
   - [ ] Include other ocarinas and give the user options of which tutotials to create for.
   - [ ] Now that there is not need to include audio, options for transposing midi files to fit an ocarinas range is possible.
   - [ ] Create robust error handling and logging.
+  - [ ] The sound only synchronises accurately at a high framerate (180fps). Figuring a way to lower this to 60 would dramatically increase performance.
   
 #### Challenges I faced and my learning progress
  
