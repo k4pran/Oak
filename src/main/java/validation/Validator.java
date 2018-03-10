@@ -36,6 +36,10 @@ public class Validator {
         return file.exists() && file.isFile();
     }
 
+    public static boolean isValidFile(File file) {
+        return file.exists() && file.isFile();
+    }
+
     public static boolean isValidMidiFile(String url) {
         if(!isValidFile(url)) {
             return false;

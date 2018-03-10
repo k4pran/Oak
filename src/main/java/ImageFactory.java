@@ -1,7 +1,6 @@
 import imagemod.ImageTransform;
 import imagemod.SpriteRendering;
 import me.tongfei.progressbar.ProgressBar;
-import text.CustomText;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -36,8 +35,6 @@ public class ImageFactory {
     private int lastFrameCount;
 
     private ArrayList<BufferedImage> introMessages;
-    private ArrayList<BufferedImage> outroMessages;
-
     private BufferedImage emptySpriteImg;
 
     //================================================================================
@@ -69,7 +66,6 @@ public class ImageFactory {
         if(expectedImages == actualFrames) {
             ArrayList<BufferedImage> combined = new ArrayList<>(introMessages);
             combined.addAll(images);
-            combined.addAll(outroMessages);
 
             return combined;
         }
@@ -134,10 +130,6 @@ public class ImageFactory {
         processed = processPreviewPanel(processed, previewSprite);
         processed = processBackgrounds(processed);
         processed = processText(processed, isTitle, isLast);
-
-        if(isLast) {
-            outroMessages = ImageTransform.scaleAll(processMessages(sprites, false), defPixelWidth, defPixelHeight);
-        }
 
         ArrayList<BufferedImage> p = new ArrayList<>();
         for(BufferedImage img : processed) {
@@ -217,7 +209,7 @@ public class ImageFactory {
         templateImg = ImageTransform.addBackground(templateImg, videoParts.getBackground());
 
         ArrayList<BufferedImage> processed = new ArrayList<>();
-        String[] messages = intro ? CustomText.getIntroText() : CustomText.getOutroText();
+        ArrayList<String> messages = intro ? CustomText.getIntroText() : CustomText.getOutroText();
         for(String text : messages) {
             BufferedImage copy = ImageTransform.copyImage(templateImg);
             CustomText.setText(CustomText.getGeneralText(), text);

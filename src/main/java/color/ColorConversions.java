@@ -106,4 +106,12 @@ public class ColorConversions {
         }
         throw new ColorConversionException("Unable to find a valid color from input: " + inputColour);
     }
+
+    public static Color fxPaintToAWT(javafx.scene.paint.Color color) {
+        java.awt.Color awtColor = new java.awt.Color((float) color.getRed(),
+                (float) color.getGreen(),
+                (float) color.getBlue(),
+                (float) color.getOpacity());
+        return awtColor;
+    }
 }

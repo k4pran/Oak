@@ -8,7 +8,7 @@ import java.io.File;
 
 public class MapImage {
 
-    // Ocarina alto C 12 hole mapping. RANGE: A4-F6
+    // Ocarina alto C 12 hole mapping. RANGE: A5-F7
     public static File altoCTwelve(String note) {
 
         switch(note) {
@@ -63,7 +63,8 @@ public class MapImage {
             case "F7":
                 return new File(("src/main/resources/Alto C Twelve/ocarina_sprite - F7.png"));
             default:
-                return null;
+                throw new OutOfRangeException("Note: " + note + " out of range for:" +
+                        "OCARINA: " + "C SOPRANO OCARINA (range: A5 - F7");
         }
     }
 }

@@ -22,12 +22,12 @@ package midi;/*
 */
 
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.Receiver;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.SysexMessage;
+import javax.sound.midi.*;
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * midi.MidiUtils provides a lot of MIDI messages. Also it can be used to build and
@@ -778,7 +778,61 @@ public final class MidiUtils {
             sysex.setMessage(data, data.length);
             return sysex;
         }
-
     }
 
+
+    /**
+     * Finds all on/off notes in a track and returns the indices.
+     * @param track
+     * @return
+     */
+    public static ArrayList<Integer> getNoteIndices(Track track, boolean notesOn, boolean notesOff) {
+        String noteOnByte = "9-";
+        String noteOffByte = "8-";
+
+        ArrayList<Integer> noteIndices = new ArrayList<>();
+        for (int msgIndex = 0; msgIndex < track.size(); msgIndex++) {
+            MidiMessage midiMessage = track.get(msgIndex).getMessage();
+            String status = MidiUtils.getSecondByte(midiMessage);
+            if(!status.equalsIgnoreCase(noteOnByte) && !status.equalsIgnoreCase(noteOffByte)) {
+                continue;
+            }
+
+            if (notesOn && (status.equalsIgnoreCase(noteOnByte) && midiMessage.getMessage()[2] > 0)) {
+                noteIndices.add(msgIndex);
+            }
+            else if (notesOff && (status.equalsIgnoreCase(noteOffByte) || midiMessage.getMessage()[2] == 0)) {
+                noteIndices.add(msgIndex);
+            }
+        }
+        return noteIndices;
+    }
+
+
+
+    public static String getSecondByte(MidiMessage midiMessage) {
+        String statusByte = String.format("%2s", Integer.toHexString(midiMessage.getStatus())).replace(' ', '0');
+        Character c = statusByte.charAt(0);
+        StringBuilder sb = new StringBuilder();
+        sb.append(c);
+        sb.append('-');
+        return sb.toString().toUpperCase();
+    }
+
+    public static String getNoteName(MidiMessage midiMessage) {
+        return formatNoteName(Integer.parseInt(DatatypeConverter.printByte(midiMessage.getMessage()[1])));
+    }
+
+    public static String formatNoteName(int x) {
+        ArrayList<String> notes = new ArrayList<>(Arrays.asList(
+                "C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"));
+        String note = notes.get(x % (notes.size()));
+        String octave = Integer.toString((x / 12));
+
+        return note.concat(octave);
+    }
+
+    public static String toHexByte(byte b) {
+        return String.format("%02x", b).toUpperCase();
+    }
 }

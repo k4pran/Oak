@@ -1,8 +1,7 @@
-package text;
-
 import color.ColorConversions;
 
 import java.awt.*;
+import java.util.ArrayList;
 
 public class CustomText {
 
@@ -13,18 +12,21 @@ public class CustomText {
     private static CustomText titleText;
     private static CustomText previewText;
     private static CustomText generalText;
-    private static String[] introText;
-    private static String[] outroText;
+    private static ArrayList<String> introText;
+    private static ArrayList<String> outroText;
 
     static {
         titleText = new CustomText("", new Font("Baghdad", Font.BOLD, 140),
                 ColorConversions.interrogateColor("237 7 65").getRGB());
 
         previewText = new CustomText("Preview note", new Font("Baghdad", Font.ITALIC, 100),
-                ColorConversions.interrogateColor("7 26 237").getRGB());
+                ColorConversions.interrogateColor("white").getRGB());
 
         generalText = new CustomText("", new Font("Baghdad", Font.BOLD, 70),
-                ColorConversions.interrogateColor("7 26 237").getRGB());
+                ColorConversions.interrogateColor("white").getRGB());
+
+        introText = new ArrayList<>();
+        outroText = new ArrayList<>();
     }
 
     //================================================================================
@@ -68,23 +70,35 @@ public class CustomText {
         return generalText;
     }
 
+    public static void setTitleText(CustomText titleText) {
+        CustomText.titleText = titleText;
+    }
+
+    public static void setPreviewText(CustomText previewText) {
+        CustomText.previewText = previewText;
+    }
+
+    public static void setGeneralText(CustomText generalText) {
+        CustomText.generalText = generalText;
+    }
+
     public static void setText(CustomText customText, String text) {
         customText.text = text;
     }
 
-    public static String[] getIntroText() {
+    public static ArrayList<String> getIntroText() {
         return introText;
     }
 
-    public static void setIntroText(String[] introText) {
+    public static void setIntroText(ArrayList<String> introText) {
         CustomText.introText = introText;
     }
 
-    public static String[] getOutroText() {
+    public static ArrayList<String> getOutroText() {
         return outroText;
     }
 
-    public static void setOutroText(String[] outroText) {
+    public static void setOutroText(ArrayList<String> outroText) {
         CustomText.outroText = outroText;
     }
 

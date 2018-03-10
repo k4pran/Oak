@@ -1,0 +1,39 @@
+#root_pane {
+    -fx-background-image: url("../images/triforce.png");
+    -fx-background-repeat: stretch;
+    -fx-background-size: 600 600;
+    -fx-background-color: transparent;
+    -fx-background-position: center center;
+}
+
+#main_title {
+    -fx-padding: 50px;
+}
+
+.sub_header {
+    -fx-padding: 7;
+    -fx-text-fill: darkolivegreen;
+    -fx-border-style: solid none solid none;
+    -fx-border-width: 1;
+    -fx-border-color: brown;
+}
+
+.text_field {
+    -fx-max-width: 300;
+}
+
+.combo_box {
+    -fx-max-width: 300;
+}
+
+.nav_buttons {
+    -fx-padding: 30;
+}
+
+.error_label {
+    -fx-text-fill: red;
+}
+
+.combo_box .list-cell {
+    -fx-alignment: center;
+}

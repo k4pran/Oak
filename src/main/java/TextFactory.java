@@ -1,6 +1,4 @@
 import imagemod.Movement;
-import text.CustomText;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 

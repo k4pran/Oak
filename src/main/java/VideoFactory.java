@@ -11,22 +11,9 @@ public class VideoFactory {
     private static ArrayList<BufferedImage> frames = new ArrayList<>();
 
     public static ArrayList<BufferedImage> getVideoFrames(ArrayList<BufferedImage> imageStills, ArrayList<Double> frameDurations,
-                                                          int framerate, int introCount, int outroCount) {
-        int imageIndex = 0;
+                                                          int framerate) {
 
-        for(; imageIndex < introCount; imageIndex++) {
-            for(int j = 0; j < Math.rint((framerate * frameDurations.get(imageIndex)) / 1000); j++) {
-                frames.add(imageStills.get(imageIndex));
-            }
-        }
-
-        for(; imageIndex < imageStills.size() - outroCount; imageIndex++) {
-            for(int j = 0; j < Math.rint((framerate * frameDurations.get(imageIndex)) / 1000); j++) {
-                frames.add(imageStills.get(imageIndex));
-            }
-        }
-
-        for(; imageIndex < imageStills.size(); imageIndex++) {
+        for(int imageIndex = 0; imageIndex < imageStills.size(); imageIndex++) {
             for(int j = 0; j < Math.rint((framerate * frameDurations.get(imageIndex)) / 1000); j++) {
                 frames.add(imageStills.get(imageIndex));
             }

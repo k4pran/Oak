@@ -38,7 +38,7 @@ public class SettingsLoader {
                 noteOnColor = color;
             }
             else {
-                throw new CommandLineException("Invalid color format (Note on color)");
+                throw new CommandLineException("Invalid color format (Note on color): "  + cmd.getOptionValue("c"));
             }
         }
 
@@ -48,7 +48,7 @@ public class SettingsLoader {
                 noteOffColor = color;
             }
             else {
-                throw new CommandLineException("Invalid color format (Note off color)");
+                throw new CommandLineException("Invalid color format (Note off color): " + cmd.getOptionValue("co"));
             }
         }
 
@@ -58,7 +58,7 @@ public class SettingsLoader {
                 previewNoteColor = color;
             }
             else {
-                throw new CommandLineException("Invalid color format (Note preview color)");
+                throw new CommandLineException("Invalid color format (Note preview color): " + cmd.getOptionValue("cp"));
             }
         }
 
@@ -90,16 +90,17 @@ public class SettingsLoader {
             }
             catch(NumberFormatException e) {
                 System.out.println("Invalid offset. Must be a numerical offset value in seconds.");
-                throw new CommandLineException("Invalid audio offset");
+                throw new CommandLineException("Invalid audio offset: " + cmd.getOptionValue("ofs"));
             }
         }
         else {
-            audioOffset = 0.2;
+            audioOffset = 0.0;
         }
 
-        return new Settings(
-                    framerate, audioOffset,
-                noteOnColor, noteOffColor, previewNoteColor
-        );
+        return new Settings(framerate,
+                            audioOffset,
+                            noteOnColor,
+                            noteOffColor,
+                            previewNoteColor);
     }
 }

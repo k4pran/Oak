@@ -1,5 +1,6 @@
 import org.apache.commons.cli.CommandLine;
-import text.CustomText;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class TextLoader {
 
@@ -15,12 +16,18 @@ public class TextLoader {
             CustomText.setText(CustomText.getTitleText(), cmd.getOptionValue("t"));
         }
 
+        if (cmd.hasOption("tc")) {
+
+        }
+
         if(cmd.hasOption("intro")) {
-            CustomText.setIntroText(cmd.getOptionValues("intro"));
+            ArrayList<String> introList = new ArrayList<>(Arrays.asList(cmd.getOptionValues("intro")));
+            CustomText.setIntroText(introList);
         }
 
         if(cmd.hasOption("outro")) {
-            CustomText.setOutroText(cmd.getOptionValues("outro"));
+            ArrayList<String> outroList = new ArrayList<>(Arrays.asList(cmd.getOptionValues("outro")));
+            CustomText.setOutroText(outroList);
         }
     }
 }

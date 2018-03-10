@@ -1,11 +1,11 @@
-import midi.MidiFile;
-import midi.MidiFileLoaderException;
-import midi.MidiToWavRenderer;
+import midi.*;
 import org.apache.commons.cli.CommandLine;
 import validation.Validator;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Sequence;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,18 +13,18 @@ import java.util.ArrayList;
 public class VideoPartsLoader {
 
     private MidiFile midiFile;
+    private Sequence sequence;
+    private ArrayList<MidiNote> midiNotes;
+    private ArrayList<MidiNote> offNotes;
     private File background;
     private File audio;
-    private ArrayList<File> preMainVidFrames;
-    private ArrayList<File> postMainVidFrames;
     private String outputFilePath;
-    private String VideoTitle;
+
+    private boolean audioFromMidi = false;
 
     private CommandLine cmd;
 
     public VideoPartsLoader(CommandLine cmd) throws CommandLineException {
-        this.preMainVidFrames = new ArrayList<>();
-        this.postMainVidFrames = new ArrayList<>();
         this.cmd = cmd;
         Conductor.setVideoParts(load());
     }
@@ -34,6 +34,18 @@ public class VideoPartsLoader {
             String midiPath = cmd.getOptionValue("i");
             try {
                 midiFile = new MidiFile(new File(midiPath));
+                this.sequence = midiFile.getSequence();
+
+                MidiCropper midiCropper = new MidiCropper(sequence);
+                sequence = midiCropper.cropDuplicates();
+                NoteExtractor noteExtractor = new NoteExtractor(sequence);
+                noteExtractor.renderSequence();
+
+                noteExtractor.transposeSequence();
+                ArrayList<MidiNote> midiNotes = noteExtractor.simpleToMidiNotes(noteExtractor.getSimpleOnNotes());
+                this.midiNotes = midiNotes;
+                this.offNotes = noteExtractor.simpleToMidiNotes(noteExtractor.getSimpleOffNotes());
+                this.sequence = noteExtractor.getSequence();
             }
             catch (MidiFileLoaderException e) {
                 e.printStackTrace();
@@ -47,7 +59,7 @@ public class VideoPartsLoader {
                 outputFilePath = path;
             }
             else {
-                throw new CommandLineException("Output file path is not valid");
+                throw new CommandLineException("Output file path is not valid: " + cmd.getOptionValue("o"));
             }
         }
 
@@ -56,7 +68,7 @@ public class VideoPartsLoader {
                 background = new File(cmd.getOptionValue("b"));
             }
             else {
-                throw new CommandLineException("Unable to load background image");
+                throw new CommandLineException("Unable to load background image: " + cmd.getOptionValue("b"));
             }
         }
 
@@ -65,49 +77,20 @@ public class VideoPartsLoader {
                 audio = new File(cmd.getOptionValue("a"));
             }
             else {
-                System.out.println("Invalid audio");
+                System.out.println("Invalid audio file: " + cmd.getOptionValue("a"));
             }
         }
         else {
-            try {
-                String tempAudioPath = "src/main/resources/temp/temp.wav";
-                MidiToWavRenderer wavRenderer = new MidiToWavRenderer();
-                wavRenderer.createWavFile(
-                        new File("src/main/resources/sounds/ocarina.sf2"),
-                        midiFile.getFile(),
-                        new File(tempAudioPath));
-                audio = new File(tempAudioPath);
-            }
-            catch (MidiUnavailableException | InvalidMidiDataException | IOException e) {
-                System.out.println("Unable to render wav");
-            }
+            audioFromMidi = true;
         }
 
-        if(cmd.hasOption("pre")) {
-            String[] preFrames = cmd.getOptionValues("pre");
-            for(String preFrame : preFrames) {
-                if(Validator.isValidFile(preFrame)) {
-                    preMainVidFrames.add(new File(preFrame));
-                }
-                else {
-                    throw new CommandLineException("Unable to load pre-video frames");
-                }
-            }
+        if(audioFromMidi) {
+            return new VideoParts(
+                    midiFile, sequence, midiNotes, offNotes, background, outputFilePath);
         }
-
-        if(cmd.hasOption("post")) {
-            String[] postFrames = cmd.getOptionValues("post");
-            for(String postFrame : postFrames) {
-                if(Validator.isValidFile(postFrame)) {
-                    postMainVidFrames.add(new File(postFrame));
-                }
-                else {
-                    throw new CommandLineException("Unable to load pre-video frames");
-                }
-            }
+        else {
+            return new VideoParts(
+                    midiFile, sequence, midiNotes, offNotes, background, audio, outputFilePath);
         }
-        return new VideoParts(
-                midiFile, background, audio, preMainVidFrames,
-                postMainVidFrames, outputFilePath);
     }
 }

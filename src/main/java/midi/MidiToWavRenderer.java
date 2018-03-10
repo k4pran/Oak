@@ -114,10 +114,7 @@ public final class MidiToWavRenderer {
     }
 
     /**
-     * Creates a WAV file based on the Sequence, using the sounds from the
-     * specified soundbank; to prevent memory problems, this method asks for an
-     * array of patches (instruments) to load.
-     *
+     * Simple convenience method to allow midi files to be passed instead of a sequence.
      * @param soundbankFile
      * @param midiFile
      * @param outputFile
@@ -126,6 +123,24 @@ public final class MidiToWavRenderer {
      * @throws IOException
      */
     public void createWavFile(final File soundbankFile, final File midiFile, final File outputFile)
+            throws MidiUnavailableException, InvalidMidiDataException, IOException {
+        final Sequence sequence = MidiSystem.getSequence(midiFile);
+        createWavFile(soundbankFile, sequence, outputFile);
+    }
+
+    /**
+     * Creates a WAV file based on the Sequence, using the sounds from the
+     * specified soundbank; to prevent memory problems, this method asks for an
+     * array of patches (instruments) to load.
+     *
+     * @param soundbankFile
+     * @param sequence
+     * @param outputFile
+     * @throws MidiUnavailableException
+     * @throws InvalidMidiDataException
+     * @throws IOException
+     */
+    public void createWavFile(final File soundbankFile, final Sequence sequence, final File outputFile)
             throws MidiUnavailableException, InvalidMidiDataException, IOException {
         // Load soundbank
         final Soundbank soundbank = loadSoundbank(soundbankFile);
@@ -143,9 +158,7 @@ public final class MidiToWavRenderer {
             synth.loadInstrument(instrument);
         }
 
-//        this.synth.loadInstrument(synth.getAvailableInstruments()[79]);
 
-        final Sequence sequence = MidiSystem.getSequence(midiFile);
         final Sequencer sequencer = MidiSystem.getSequencer(false);
         sequencer.getTransmitter().setReceiver(synth.getReceiver());
 

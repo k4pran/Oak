@@ -1,9 +1,11 @@
-import midi.MidiNotes;
+import javafx.application.Application;
+import midi.NoteExtractor;
 import midi.NoteProcessingException;
-import text.CustomText;
+import midi.NoteToImage;
 import video.FFMpeg;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -27,40 +29,77 @@ public class Conductor {
     //================================================================================
 
     public static void start(String[] args) throws CommandLineException, NoteProcessingException, FrameConstructionException {
+
+        parseCommandLine(args);
+
+        createImageFrames();
+
+        ArrayList<Double> frameDurations = getFrameDurations();
+
+        ArrayList<BufferedImage> videoFrames = createVideoFrames(frameDurations);
+
+        outputVideo(videoFrames, frameDurations);
+
+        cleanUp();
+    }
+
+    private static void parseCommandLine(String[] args) throws CommandLineException {
         CmdParser parser = new CmdParser(args);
 
         if(parser.cmd.hasOption("gui")) {
-            //Todo
+            Application.launch(OakGUI.class);
+            System.out.println("continuing");
         }
         else {
             parser.loadFromCmdLine();
         }
+    }
 
+    private static void createImageFrames() {
         // Get image sprites
-        ArrayList<Integer> notes = MidiNotes.extractNotes(videoParts.getMidiFile());
-        ocarinaSprites = MidiNotes.mapNotesToImages(notes);
+        ocarinaSprites = NoteToImage.mapNotesToImages(videoParts.getMidiNotes());
 
         // Construct image frame
         ImageFactory imageFactory = new ImageFactory(settings, videoParts);
         imageFrames = imageFactory.createImages(ocarinaSprites);
+    }
 
-        // Extract note lengths
-        ArrayList<Double> frameDurations = new ArrayList<>(Collections.nCopies(videoParts.getIntroFrames().size(), 1000.00));
-        frameDurations.addAll(Collections.nCopies(CustomText.getIntroText().length, 1000.00));
-        frameDurations.addAll(MidiNotes.extractNoteLengths(videoParts.getMidiFile()));
-        frameDurations.addAll(Collections.nCopies(CustomText.getOutroText().length, 1000.00));
-        frameDurations.addAll(Collections.nCopies(videoParts.getOutroFrames().size() + 1, 1000.00));
+    private static ArrayList<Double> getFrameDurations() {
+        ArrayList<Double> frameDurations = new ArrayList<>();
+        // Intro frame durations
+        frameDurations.addAll(Collections.nCopies(CustomText.getIntroText().size(),
+                1000.00 * videoParts.getMidiFile().getTicksInMs()));
 
-        // Video frames
-        int introCount = videoParts.getIntroFrames().size() + CustomText.getIntroText().length;
-        int outroCount = videoParts.getOutroFrames().size() + CustomText.getOutroText().length;
-        ArrayList<BufferedImage> videoFrames = VideoFactory.getVideoFrames(imageFrames, frameDurations, settings.getFramerate(), introCount, outroCount);
+        // Played note frame durations
+        frameDurations.addAll(NoteExtractor.extractDurations(
+                videoParts.getMidiNotes(), videoParts.getOffNotes(), videoParts.getMidiFile().getTicksInMs()));
 
-        // Output video
+        // Outro frame durations
+        frameDurations.addAll(Collections.nCopies(CustomText.getOutroText().size(),
+                1000.00 * videoParts.getMidiFile().getTicksInMs()));
+        return frameDurations;
+    }
+
+    private static ArrayList<BufferedImage> createVideoFrames(
+            ArrayList<Double> frameDurations) {
+        return VideoFactory.getVideoFrames(imageFrames, frameDurations, settings.getFramerate());
+    }
+
+    private static void outputVideo(ArrayList<BufferedImage> videoFrames, ArrayList<Double> frameDurations) {
         FFMpeg ffMpeg = new FFMpeg();
-        Double audioOffset = (settings.getAudioOffset() / 1000) + introCount;
+        Double audioOffset = settings.getAudioOffset();
+        for(int i = 0; i < CustomText.getIntroText().size(); i++) {
+            audioOffset += frameDurations.get(i) / 1000;
+        }
         ffMpeg.outputTutorial(videoFrames ,videoParts.getOutputFilePath(), videoParts.getAudio().getAbsolutePath(),
                 settings.getFramerate(), audioOffset);
+    }
+
+    private static void cleanUp() {
+        File file = new File("src/main/resources/temp/temp.wav");
+        if(file.delete()) {
+            System.out.println("Temporary audio file deleted");
+        }
     }
 
     //================================================================================
