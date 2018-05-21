@@ -9,6 +9,8 @@ public class SettingsLoader {
     // Properties
     //================================================================================
 
+    private boolean outputPdf;
+    private boolean outputVid;
     private int framerate;
     private Double audioOffset;
     private Color noteOnColor;
@@ -31,6 +33,26 @@ public class SettingsLoader {
     //================================================================================
 
     private Settings load() throws CommandLineException {
+
+        if (cmd.hasOption("pdf") && cmd.hasOption("vid")) {
+            outputPdf = true;
+            outputVid = true;
+        }
+
+        else if (cmd.hasOption("pdf")) {
+            outputPdf = true;
+            outputVid = false;
+        }
+
+        else if (cmd.hasOption("vid")) {
+            outputVid = true;
+            outputPdf = false;
+        }
+
+        else {
+            outputVid = true;
+            outputPdf = true;
+        }
 
         if(cmd.hasOption("c")) {
             Color color = ColorConversions.interrogateColor(cmd.getOptionValue("c"));
@@ -97,7 +119,9 @@ public class SettingsLoader {
             audioOffset = 0.0;
         }
 
-        return new Settings(framerate,
+        return new Settings(outputPdf,
+                            outputVid,
+                            framerate,
                             audioOffset,
                             noteOnColor,
                             noteOffColor,

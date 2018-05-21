@@ -29,7 +29,6 @@ public class ImageFactory {
     private VideoParts videoParts;
     private int rows;
     private int cols;
-    private int totalSpriteCount;
     private int spritesPerPage;
     private int titleFrameCount;
     private int lastFrameCount;
@@ -59,23 +58,33 @@ public class ImageFactory {
 
         progressBar = new ProgressBar("Creating frames", sprites.size());
         progressBar.start();
-        ArrayList<BufferedImage> images = allocateJobs(sprites);
-        progressBar.stop();
-        int actualFrames = images.size();
+        if (settings.outputPdf()) {
+            ArrayList<BufferedImage> pdfImages = coordinatePdfCreation(sprites);
+            PdfOutput pdfOutput = new PdfOutput("test", pdfImages);
+            pdfOutput.writePdf();
+        }
+        if (settings.outputVid()) {
+            ArrayList<BufferedImage> videoImages = coordinateVideoCreation(sprites);
+            progressBar.stop();
+            int actualFrames = videoImages.size();
 
-        if(expectedImages == actualFrames) {
-            ArrayList<BufferedImage> combined = new ArrayList<>(introMessages);
-            combined.addAll(images);
+            if (expectedImages == actualFrames) {
+                ArrayList<BufferedImage> combined = new ArrayList<>(introMessages);
+                combined.addAll(videoImages);
 
-            return combined;
+                return combined;
+            }
+            else {
+                throw new FrameConstructionException("Expected images from sprites does not match actual images created");
+            }
         }
         else {
-            throw new FrameConstructionException("Expected images from sprites does not match actual images created");
+            System.exit(0);
         }
+        return sprites;
     }
 
     private void calculateSpriteCounts(ArrayList<BufferedImage> sprites) {
-        this.totalSpriteCount = sprites.size();
         this.spritesPerPage = rows * cols;
        this.titleFrameCount = sprites.size() >= (rows - 1) * cols ?
                 (rows - 1) * cols : sprites.size();
@@ -83,53 +92,91 @@ public class ImageFactory {
                 spritesPerPage : (sprites.size() - titleFrameCount) % spritesPerPage;
     }
 
-    private ArrayList<BufferedImage> allocateJobs(ArrayList<BufferedImage> sprites) {
+    private ArrayList<BufferedImage> coordinatePdfCreation(ArrayList<BufferedImage> sprites) {
         ArrayList<BufferedImage> finishedFrames = new ArrayList<>();
         ArrayList<BufferedImage> spriteSubArr;
 
         // FIRST
-
         spriteSubArr = new ArrayList<>(sprites.subList(0, titleFrameCount));
-        finishedFrames.addAll(process(spriteSubArr, true, false,
-                createPreviewSprite(sprites.get(titleFrameCount))));
+        finishedFrames.add(createForPdf(spriteSubArr, true, false));
 
         // MIDDLE
-
         int lowerIndex = titleFrameCount;
         int upperIndex = titleFrameCount + spritesPerPage;
 
         while(upperIndex <= sprites.size() - lastFrameCount) {
             spriteSubArr = new ArrayList<>(sprites.subList(lowerIndex, upperIndex));
-            finishedFrames.addAll(process(spriteSubArr, false, false,
+            finishedFrames.add(createForPdf(spriteSubArr, false, false));
+            lowerIndex += spritesPerPage;
+            upperIndex += spritesPerPage;
+        }
+
+        // LAST
+        spriteSubArr = new ArrayList<>(sprites.subList(
+                sprites.size() - lastFrameCount, sprites.size()));
+        finishedFrames.add(createForPdf(spriteSubArr, false, true));
+
+        return finishedFrames;
+    }
+
+    private ArrayList<BufferedImage> coordinateVideoCreation(ArrayList<BufferedImage> sprites) {
+        ArrayList<BufferedImage> finishedFrames = new ArrayList<>();
+        ArrayList<BufferedImage> spriteSubArr;
+
+        // FIRST
+        spriteSubArr = new ArrayList<>(sprites.subList(0, titleFrameCount));
+        finishedFrames.addAll(createForVideo(spriteSubArr, true, false,
+                createPreviewSprite(sprites.get(titleFrameCount))));
+
+        // MIDDLE
+        int lowerIndex = titleFrameCount;
+        int upperIndex = titleFrameCount + spritesPerPage;
+
+        while(upperIndex <= sprites.size() - lastFrameCount) {
+            spriteSubArr = new ArrayList<>(sprites.subList(lowerIndex, upperIndex));
+            finishedFrames.addAll(createForVideo(spriteSubArr, false, false,
                     createPreviewSprite(sprites.get(upperIndex))));
             lowerIndex += spritesPerPage;
             upperIndex += spritesPerPage;
         }
 
         // LAST
-
         spriteSubArr = new ArrayList<>(sprites.subList(
                 sprites.size() - lastFrameCount, sprites.size()));
-        finishedFrames.addAll(process(spriteSubArr, false, true, createEmptySprite(spriteSubArr.get(0))));
+        finishedFrames.addAll(createForVideo(spriteSubArr, false, true, createEmptySprite(spriteSubArr.get(0))));
 
         return finishedFrames;
     }
 
-    private ArrayList<BufferedImage> process(ArrayList<BufferedImage> sprites, boolean isTitle, boolean isLast,
-                                             BufferedImage previewSprite) {
+    private BufferedImage createForPdf(ArrayList<BufferedImage> sprites, boolean isTitle, boolean isLast) {
+
+        BufferedImage img;
+
+        if(isTitle) {
+            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), defPixelWidth, defPixelHeight);
+        }
+        img = addForeGround(sprites, isTitle, isLast);
+        img = addBackground(img);
+        img = addTextToImage(img, isTitle);
+        img = ImageTransform.scale(img, defPixelWidth, defPixelHeight);
+
+        return img;
+    }
+
+    private ArrayList<BufferedImage> createForVideo(ArrayList<BufferedImage> sprites, boolean isTitle, boolean isLast,
+                                                    BufferedImage previewSprite) {
 
 
-        // Foreground
         ArrayList<BufferedImage> processed;
 
         if(isTitle) {
-            introMessages = ImageTransform.scaleAll(processMessages(sprites, true), defPixelWidth, defPixelHeight);
+            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), defPixelWidth, defPixelHeight);
         }
 
-        processed = processForegrounds(sprites, isTitle, isLast);
-        processed = processPreviewPanel(processed, previewSprite);
-        processed = processBackgrounds(processed);
-        processed = processText(processed, isTitle, isLast);
+        processed = addForegrounds(sprites, isTitle, isLast);
+        processed = addPreviewPanel(processed, previewSprite);
+        processed = addBackgrounds(processed);
+        processed = addTextToImages(processed, isTitle, isLast);
 
         ArrayList<BufferedImage> p = new ArrayList<>();
         for(BufferedImage img : processed) {
@@ -140,7 +187,15 @@ public class ImageFactory {
         return p;
     }
 
-    private ArrayList<BufferedImage> processForegrounds(
+    private BufferedImage addForeGround(ArrayList<BufferedImage> sprites, boolean isTitle, boolean isLast) {
+
+        ForegroundFactory foregroundFactory = new ForegroundFactory(
+                settings.getNoteOnColor().getRGB(), settings.getNoteOffColor().getRGB(), isTitle, isLast);
+        int rows = this.rows;
+        return foregroundFactory.createForeGround(sprites, rows, cols);
+    }
+
+    private ArrayList<BufferedImage> addForegrounds(
             ArrayList<BufferedImage> sprites, boolean isTitle, boolean isLast) {
 
         ForegroundFactory foregroundFactory = new ForegroundFactory(
@@ -150,8 +205,14 @@ public class ImageFactory {
         return foregroundFactory.createForegrounds(sprites, rows, cols);
     }
 
-    private ArrayList<BufferedImage> processPreviewPanel(ArrayList<BufferedImage> images,
-                                                         BufferedImage previewSprite) {
+    private BufferedImage addPdfPanel(BufferedImage image) {
+        PreviewPanelFactory previewPanelFactory = new PreviewPanelFactory(
+                new Color(0, 255, 255, 50), rows, cols);
+        return previewPanelFactory.addPdfPanel(image);
+    }
+
+    private ArrayList<BufferedImage> addPreviewPanel(ArrayList<BufferedImage> images,
+                                                     BufferedImage previewSprite) {
 
         ArrayList<BufferedImage> processed = new ArrayList<>();
         for(BufferedImage image : images) {
@@ -162,7 +223,11 @@ public class ImageFactory {
         return processed;
     }
 
-    ArrayList<BufferedImage> processBackgrounds(ArrayList<BufferedImage> images) {
+    public BufferedImage addBackground(BufferedImage image) {
+        return ImageTransform.addBackground(image, videoParts.getBackground());
+    }
+
+    public ArrayList<BufferedImage> addBackgrounds(ArrayList<BufferedImage> images) {
 
         ArrayList<BufferedImage> processed = new ArrayList<>();
         for(BufferedImage image : images) {
@@ -171,8 +236,15 @@ public class ImageFactory {
         return  processed;
     }
 
-    ArrayList<BufferedImage> processText(ArrayList<BufferedImage> images, boolean isTitle,
-                                         boolean isLast) {
+    public BufferedImage addTextToImage(BufferedImage image, boolean isTitle) {
+        if(isTitle) {
+            TextFactory.addTitle(image, CustomText.getTitleText(), rows + 1);
+        }
+        return image;
+    }
+
+    public ArrayList<BufferedImage> addTextToImages(ArrayList<BufferedImage> images, boolean isTitle,
+                                                    boolean isLast) {
 
         for(BufferedImage image : images) {
             if(isTitle) {
@@ -185,7 +257,7 @@ public class ImageFactory {
         return images;
     }
 
-    private ArrayList<BufferedImage> processMessages(ArrayList<BufferedImage> sprites, boolean intro) {
+    private ArrayList<BufferedImage> addMessages(ArrayList<BufferedImage> sprites, boolean intro) {
 
         BufferedImage templateImg;
         ArrayList<BufferedImage> spritesCopy = new ArrayList<>();

@@ -27,6 +27,16 @@ public class ForegroundFactory {
         this.isLastFrame = isLastFrame;
     }
 
+    public BufferedImage createForeGround(ArrayList<BufferedImage> sprites, int rows, int cols) {
+
+        ArrayList<BufferedImage> foregroundParts;
+        if (isFirstFrame) {
+            rows -= 1;
+        }
+        foregroundParts = renderInactiveSprites(sprites, noteOffColor);
+        return stitchSprites(renderInactiveSprites(foregroundParts, noteOffColor), rows, cols);
+    }
+
     public ArrayList<BufferedImage> createForegrounds(ArrayList<BufferedImage> sprites, int rows, int cols) {
 
         ArrayList<BufferedImage> processed = new ArrayList<>();

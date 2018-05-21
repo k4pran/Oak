@@ -38,6 +38,13 @@ public class CmdParser {
                 .desc("launch gui setup. This will ignore any further commandline arguments")
                 .build());
 
+        options.addOption(Option.builder("pdf")
+                .desc("Outputs pdf only")
+                .build());
+
+        options.addOption(Option.builder("vid")
+                .desc("Outputs video only")
+                .build());
 
         options.addOption(Option.builder("i")
                 .longOpt("file")

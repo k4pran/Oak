@@ -17,11 +17,34 @@ public class PreviewPanelFactory {
     int rows;
     int cols;
 
+    public PreviewPanelFactory(Color panelTint, int rows, int cols) {
+        this.panelTint = panelTint;
+        this.previewSprite = addTransparency(previewSprite);
+        this.rows = rows;
+        this.cols = cols;
+    }
+
     public PreviewPanelFactory(Color panelTint, BufferedImage previewSprite, int rows, int cols) {
         this.panelTint = panelTint;
         this.previewSprite = addTransparency(previewSprite);
         this.rows = rows;
         this.cols = cols;
+    }
+
+    public BufferedImage addPdfPanel(BufferedImage image) {
+        int panelWidth = image.getWidth();
+        int panelHeight = image.getHeight() / this.rows;
+        int startPosX = 0;
+        int startPosY = image.getHeight() - panelHeight;
+
+        BufferedImage previewPanel = new BufferedImage(panelWidth, panelHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics prevGfx = previewPanel.createGraphics();
+        prevGfx.setColor(panelTint);
+        prevGfx.fillRect(0, 0, panelWidth, panelHeight);
+
+        Graphics compGfx = image.createGraphics();
+        compGfx.drawImage(previewPanel, startPosX, startPosY, null);
+        return image;
     }
 
     public BufferedImage addPreviewPanel(BufferedImage image) {
