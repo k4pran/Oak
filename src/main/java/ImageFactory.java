@@ -22,8 +22,8 @@ public class ImageFactory {
 
     private ProgressBar progressBar;
 
-    private static int defPixelWidth = 800;
-    private static int defPixelHeight = 600;
+    private static int WIDTH = 800;
+    private static int HEIGHT = 600;
 
     private Settings settings;
     private VideoParts videoParts;
@@ -34,7 +34,6 @@ public class ImageFactory {
     private int lastFrameCount;
 
     private ArrayList<BufferedImage> introMessages;
-    private BufferedImage emptySpriteImg;
 
     //================================================================================
     // Constructors
@@ -43,8 +42,8 @@ public class ImageFactory {
     public ImageFactory(Settings settings, VideoParts videoParts) {
         this.settings = settings;
         this.videoParts = videoParts;
-        this.rows = settings.getROWS();
-        this.cols = settings.getCOLS();
+        this.rows = settings.getRows();
+        this.cols = settings.getCols();
     }
 
     //================================================================================
@@ -125,25 +124,23 @@ public class ImageFactory {
 
         // FIRST
         spriteSubArr = new ArrayList<>(sprites.subList(0, titleFrameCount));
+        sprites.removeAll(spriteSubArr);
         finishedFrames.addAll(createForVideo(spriteSubArr, true, false,
-                createPreviewSprite(sprites.get(titleFrameCount))));
+                SpriteRendering.createPreviewSprite(sprites.get(titleFrameCount), settings.getPreviewNoteColor())));
 
         // MIDDLE
-        int lowerIndex = titleFrameCount;
-        int upperIndex = titleFrameCount + spritesPerPage;
-
-        while(upperIndex <= sprites.size() - lastFrameCount) {
-            spriteSubArr = new ArrayList<>(sprites.subList(lowerIndex, upperIndex));
+        while(sprites.size() >  lastFrameCount) {
+            spriteSubArr = new ArrayList<>(sprites.subList(0, spritesPerPage));
             finishedFrames.addAll(createForVideo(spriteSubArr, false, false,
-                    createPreviewSprite(sprites.get(upperIndex))));
-            lowerIndex += spritesPerPage;
-            upperIndex += spritesPerPage;
+                    SpriteRendering.createPreviewSprite(sprites.get(spritesPerPage), settings.getPreviewNoteColor())));
+            sprites.removeAll(spriteSubArr);
         }
 
         // LAST
-        spriteSubArr = new ArrayList<>(sprites.subList(
-                sprites.size() - lastFrameCount, sprites.size()));
-        finishedFrames.addAll(createForVideo(spriteSubArr, false, true, createEmptySprite(spriteSubArr.get(0))));
+        spriteSubArr = new ArrayList<>(sprites.subList(0, sprites.size()));
+        sprites.removeAll(spriteSubArr);
+        finishedFrames.addAll(createForVideo(spriteSubArr, false, true,
+                SpriteRendering.createEmptySprite(spriteSubArr.get(0))));
 
         return finishedFrames;
     }
@@ -153,12 +150,12 @@ public class ImageFactory {
         BufferedImage img;
 
         if(isTitle) {
-            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), defPixelWidth, defPixelHeight);
+            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), WIDTH, HEIGHT);
         }
         img = addForeGround(sprites, isTitle, isLast);
         img = addBackground(img);
         img = addTextToImage(img, isTitle);
-        img = ImageTransform.scale(img, defPixelWidth, defPixelHeight);
+        img = ImageTransform.scale(img, WIDTH, HEIGHT);
 
         return img;
     }
@@ -170,7 +167,7 @@ public class ImageFactory {
         ArrayList<BufferedImage> processed;
 
         if(isTitle) {
-            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), defPixelWidth, defPixelHeight);
+            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), WIDTH, HEIGHT);
         }
 
         processed = addForegrounds(sprites, isTitle, isLast);
@@ -178,13 +175,8 @@ public class ImageFactory {
         processed = addBackgrounds(processed);
         processed = addTextToImages(processed, isTitle, isLast);
 
-        ArrayList<BufferedImage> p = new ArrayList<>();
-        for(BufferedImage img : processed) {
-            p.add(ImageTransform.scale(img, defPixelWidth, defPixelHeight));
-        }
-
         progressBar.stepBy(sprites.size());
-        return p;
+        return processed;
     }
 
     private BufferedImage addForeGround(ArrayList<BufferedImage> sprites, boolean isTitle, boolean isLast) {
@@ -200,15 +192,9 @@ public class ImageFactory {
 
         ForegroundFactory foregroundFactory = new ForegroundFactory(
                 settings.getNoteOnColor().getRGB(), settings.getNoteOffColor().getRGB(),
-                isTitle, isLast);
+                isTitle, isLast, true, WIDTH, HEIGHT);
         int rows = this.rows;
         return foregroundFactory.createForegrounds(sprites, rows, cols);
-    }
-
-    private BufferedImage addPdfPanel(BufferedImage image) {
-        PreviewPanelFactory previewPanelFactory = new PreviewPanelFactory(
-                new Color(0, 255, 255, 50), rows, cols);
-        return previewPanelFactory.addPdfPanel(image);
     }
 
     private ArrayList<BufferedImage> addPreviewPanel(ArrayList<BufferedImage> images,
@@ -289,20 +275,5 @@ public class ImageFactory {
             processed.add(copy);
         }
         return processed;
-    }
-
-    private BufferedImage createPreviewSprite(BufferedImage sprite) {
-        sprite = SpriteRendering.addTransparency(sprite);
-        sprite = SpriteRendering.colorSprite(sprite, settings.getPreviewNoteColor().getRGB());
-        return sprite;
-    }
-
-    private BufferedImage createEmptySprite(BufferedImage sprite) {
-        emptySpriteImg = new BufferedImage(sprite.getWidth(), sprite.getHeight(),
-                BufferedImage.TYPE_INT_ARGB);
-        Graphics gfx = emptySpriteImg.createGraphics();
-        gfx.setColor(Color.white);
-        gfx.drawRect(0, 0, emptySpriteImg.getWidth(), emptySpriteImg.getHeight());
-        return emptySpriteImg;
     }
 }
