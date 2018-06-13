@@ -15,9 +15,9 @@ It is customisable while still allowing the process to be quick and automating m
   - [x] Customise title and title color.
   - [x] Adjustable framerate and audio offset (should rarely need to change these).
   - [x] Progress bar for commandline as it can take a few minutes for a basic song.
-  ~~- [ ] Allow custom frames to be added before and after the main tutorial (e.g. you can include an intro image linking to your website etc.)~~
+  - [ ] ~~Allow custom frames to be added before and after the main tutorial (e.g. you can include an intro image linking to your website etc.)~~
   - [ ] Option to output tutorial in PDF form.
-  ~~- [ ] Option to output sheet music with tutorial as PDF.~~
+  - [ ] ~~Option to output sheet music with tutorial as PDF.~~
   - [x] Separate audio file now optional as audio wav file can be generated and used with an ocarina soundfont.
   - [x] Create a simple GUI as an alternative to commandline, this will be similar to a 'wizard' simply setting up a project.
   - [ ] Include a sample preview of what a frame will look like before the process begines.
