@@ -29,9 +29,8 @@ public class ColorConversions {
             return (Color)Color.class.getField(name.toUpperCase()).get(null);
         }
         catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-//            throw new color.ColorConversionException("Unable to find color: '" + name + "'");
+            throw new color.ColorConversionException("Unable to find color: '" + name + "'");
         }
-        return null;
     }
 
     /**
@@ -80,35 +79,34 @@ public class ColorConversions {
      * @throws ColorConversionException
      */
     public static Color interrogateColor(String inputColour) throws ColorConversionException {
-        Color color = getColorByName(inputColour);
+        Color color = null;
+        try {
+            color = getColorByName(inputColour);
+        }
+        catch (ColorConversionException e) {}
+
         if(color != null) {
             return color;
         }
         else {
             String[] rgb = inputColour.split(" ");
             if(rgb.length == 3) {
-                color = mergeRGB(rgb);
-                if(color != null) {
-                    return color;
-                }
-                else {
-                    // Check if hex values being input and convert.
-                    try {
-                        int[] rgbAsInt = new int[rgb.length];
-                        for(int i = 0; i < rgb.length; i++) {
-                            rgbAsInt[i] = Integer.parseInt(rgb[i], 16);
-                        }
-                        return mergeRGB(rgbAsInt);
+                // Check if hex values being input and convert.
+                try {
+                    int[] rgbAsInt = new int[rgb.length];
+                    for(int i = 0; i < rgb.length; i++) {
+                        rgbAsInt[i] = Integer.parseInt(rgb[i], 10);
                     }
-                    catch(NumberFormatException e) {}
+                    return mergeRGB(rgbAsInt);
                 }
+                catch(NumberFormatException e) {}
             }
         }
         throw new ColorConversionException("Unable to find a valid color from input: " + inputColour);
     }
 
     public static Color fxPaintToAWT(javafx.scene.paint.Color color) {
-        java.awt.Color awtColor = new java.awt.Color((float) color.getRed(),
+        Color awtColor = new Color((float) color.getRed(),
                 (float) color.getGreen(),
                 (float) color.getBlue(),
                 (float) color.getOpacity());
