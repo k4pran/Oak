@@ -33,7 +33,6 @@ public class MidiCropper {
                     long tick = oldTrack.get(i).getTick();
                     boolean isOnNote = MidiUtils.getSecondByte(msg).equalsIgnoreCase(noteOnByte) && msg.getMessage()[2] > 0;
                     MiniNote newNote = new MiniNote(msg, msg.getMessage()[1], isOnNote, tick + 1);
-                    System.out.println(newNote.noteName + " " + isOnNote);
 
                     if(simpleNotes.contains(newNote)) {
                         int storedIndex = simpleNotes.indexOf(newNote);

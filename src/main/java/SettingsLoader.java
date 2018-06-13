@@ -16,6 +16,7 @@ public class SettingsLoader {
     private Color noteOnColor;
     private Color noteOffColor;
     private Color previewNoteColor;
+    private int dims = 3;
 
     private CommandLine cmd;
 
@@ -52,6 +53,16 @@ public class SettingsLoader {
         else {
             outputVid = true;
             outputPdf = true;
+        }
+
+        if(cmd.hasOption("d")) {
+            try {
+                dims = Integer.parseInt(cmd.getOptionValue("d"));
+
+            }
+            catch (NumberFormatException e) {
+                System.out.println("Invalid dimensions, defaulting to 3 x 3");
+            }
         }
 
         if(cmd.hasOption("c")) {
@@ -125,6 +136,7 @@ public class SettingsLoader {
                             audioOffset,
                             noteOnColor,
                             noteOffColor,
-                            previewNoteColor);
+                            previewNoteColor,
+                            dims);
     }
 }

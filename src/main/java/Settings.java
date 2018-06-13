@@ -8,13 +8,13 @@ public class Settings {
     private int framerate;
     private Double audioOffset;
 
-    private int ROWS = 3;
-    private int COLS = 3;
+    private int rows = 3;
+    private int cols = 3;
     private Color noteOnColor;
     private Color noteOffColor;
     private Color previewNoteColor;
 
-    public Settings(int framerate, Double audioOffset, Color noteOnColor, Color noteOffColor, Color previewNoteColor) {
+    public Settings(int framerate, Double audioOffset, Color noteOnColor, Color noteOffColor, Color previewNoteColor, int dims) {
         this.outputPdf = true;
         this.outputVid = true;
         this.framerate = framerate;
@@ -22,9 +22,11 @@ public class Settings {
         this.noteOnColor = noteOnColor;
         this.noteOffColor = noteOffColor;
         this.previewNoteColor = previewNoteColor;
+        this.rows = dims;
+        this.cols = dims;
     }
 
-    public Settings(boolean outputPdf, boolean outputVid, int framerate, Double audioOffset, Color noteOnColor, Color noteOffColor, Color previewNoteColor) {
+    public Settings(boolean outputPdf, boolean outputVid, int framerate, Double audioOffset, Color noteOnColor, Color noteOffColor, Color previewNoteColor, int dims) {
         this.outputPdf = outputPdf;
         this.outputVid = outputVid;
         this.framerate = framerate;
@@ -32,6 +34,8 @@ public class Settings {
         this.noteOnColor = noteOnColor;
         this.noteOffColor = noteOffColor;
         this.previewNoteColor = previewNoteColor;
+        this.rows = dims;
+        this.cols = dims;
     }
     public int getFramerate() {
         return framerate;
@@ -49,12 +53,12 @@ public class Settings {
         return audioOffset;
     }
 
-    public int getROWS() {
-        return ROWS;
+    public int getRows() {
+        return rows;
     }
 
-    public int getCOLS() {
-        return COLS;
+    public int getCols() {
+        return cols;
     }
 
     public Color getNoteOnColor() {

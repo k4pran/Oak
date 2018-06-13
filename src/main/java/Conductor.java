@@ -45,14 +45,7 @@ public class Conductor {
 
     private static void parseCommandLine(String[] args) throws CommandLineException {
         CmdParser parser = new CmdParser(args);
-
-        if(parser.cmd.hasOption("gui")) {
-            Application.launch(OakGUI.class);
-            System.out.println("continuing");
-        }
-        else {
-            parser.loadFromCmdLine();
-        }
+        parser.loadFromCmdLine();
     }
 
     private static void createImageFrames() {

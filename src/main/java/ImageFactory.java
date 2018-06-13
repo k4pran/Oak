@@ -150,7 +150,7 @@ public class ImageFactory {
         BufferedImage img;
 
         if(isTitle) {
-            introMessages = ImageTransform.scaleAll(addMessages(sprites, true), WIDTH, HEIGHT);
+            introMessages = addMessages(sprites, true);
         }
         img = addForeGround(sprites, isTitle, isLast);
         img = addBackground(img);
@@ -257,12 +257,13 @@ public class ImageFactory {
             SpriteRendering.addTransparency(sprite);
         }
         templateImg = ImageTransform.stitchImages(spritesCopy, rows, cols);
+        templateImg = ImageTransform.scale(templateImg, WIDTH, HEIGHT);
         if(intro) {
-            templateImg = ImageTransform.padImageTop(templateImg, sprites.get(0).getHeight());
+            templateImg = ImageTransform.padImageTop(templateImg, templateImg.getHeight() / cols);
             TextFactory.addTitle(templateImg, CustomText.getTitleText(), rows + 1);
         }
         else {
-            templateImg = ImageTransform.padImageBottom(templateImg, sprites.get(0).getHeight());
+            templateImg = ImageTransform.padImageBottom(templateImg, templateImg.getHeight() / cols);
         }
         templateImg = ImageTransform.addBackground(templateImg, videoParts.getBackground());
 
