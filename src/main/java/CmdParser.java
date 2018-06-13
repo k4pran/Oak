@@ -78,6 +78,14 @@ public class CmdParser {
                 .build()
         );
 
+        options.addOption(Option.builder("d")
+                .longOpt("dims")
+                .desc("Number of rows/cols per page.")
+                .hasArg()
+                .argName("<row/cols>")
+                .build()
+        );
+
         options.addOption(Option.builder("pre")
                 .desc("Add frames before tutorial. " +
                         "Enter image paths")
@@ -171,6 +179,14 @@ public class CmdParser {
                 .hasArg()
                 .argName("<text>")
                 .required()
+                .build()
+        );
+
+        options.addOption(Option.builder("tc")
+                .longOpt("title_color")
+                .desc("Music title text color.")
+                .hasArg()
+                .argName("<color>")
                 .build()
         );
 

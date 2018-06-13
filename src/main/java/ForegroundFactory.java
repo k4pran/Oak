@@ -16,6 +16,9 @@ public class ForegroundFactory {
     int noteOffColor;
     private boolean isFirstFrame = false;
     private boolean isLastFrame = false;
+    private boolean scale = false;
+    private int width;
+    private int height;
 
     ArrayList<BufferedImage> foregrounds;
 
@@ -25,6 +28,18 @@ public class ForegroundFactory {
         this.noteOffColor = noteOffColor;
         this.isFirstFrame = isFirstFrame;
         this.isLastFrame = isLastFrame;
+    }
+
+    public ForegroundFactory(int noteOnColor, int noteOffColor, boolean isFirstFrame, boolean isLastFrame, boolean scale,
+                             int width, int height) {
+        foregrounds = new ArrayList<>();
+        this.noteOnColor = noteOnColor;
+        this.noteOffColor = noteOffColor;
+        this.isFirstFrame = isFirstFrame;
+        this.isLastFrame = isLastFrame;
+        this.scale = scale;
+        this.width = width;
+        this.height = height;
     }
 
     public BufferedImage createForeGround(ArrayList<BufferedImage> sprites, int rows, int cols) {
@@ -47,21 +62,36 @@ public class ForegroundFactory {
         if(isFirstFrame) {
             rows -= 1;
             foregroundParts = renderInactiveSprites(sprites, noteOffColor);
-            processed.add(stitchSprites(renderInactiveSprites(foregroundParts, noteOffColor), rows, cols));
+            if (scale) {
+                processed.add(ImageTransform.scale(
+                        stitchSprites(renderInactiveSprites(foregroundParts, noteOffColor), rows, cols), width, height));
+            }
+            else {
+                processed.add(stitchSprites(renderInactiveSprites(foregroundParts, noteOffColor), rows, cols));
+            }
         }
 
         for(int i = 0; i < spriteCount; i++) {
             foregroundParts = renderInactiveSprites(sprites, noteOffColor);
             foregroundParts.set(i, renderActiveSprite(foregroundParts.get(i), noteOnColor));
             tmp = stitchSprites(foregroundParts, rows, cols);
+            if (scale) {
+                tmp = ImageTransform.scale(tmp, width, height);
+            }
             processed.add(tmp);
         }
 
         if(isLastFrame) {
             foregroundParts = renderInactiveSprites(sprites, noteOffColor);
-            processed.add(stitchSprites(foregroundParts, rows, cols));
+            if (scale) {
+                processed.add(ImageTransform.scale(stitchSprites(foregroundParts, rows, cols), width, height));
+            }
+            else {
+                processed.add(stitchSprites(foregroundParts, rows, cols));
+            }
         }
         this.foregrounds = processed;
+
         return processed;
     }
 
