@@ -135,7 +135,8 @@ public class NoteExtractor {
         MidiNote previousNote = onNotes.get(0);
 
         for(int i = 1; i < onNotes.size(); i++) {
-            lengths.add((onNotes.get(i).getTick() * tickInMs) - (previousNote.getTick() * tickInMs));
+            double duration = (onNotes.get(i).getTick() * tickInMs) - (previousNote.getTick() * tickInMs);
+            lengths.add(duration);
             previousNote = onNotes.get(i);
         }
         lengths.add(offNotes.get(offNotes.size() - 1).getTick() * tickInMs -

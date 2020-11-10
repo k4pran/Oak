@@ -1,13 +1,17 @@
-import javafx.application.Application;
 import midi.NoteExtractor;
 import midi.NoteProcessingException;
 import midi.NoteToImage;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import video.FFMpeg;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 
 /**
  * Controls the flow of the program.
@@ -15,22 +19,20 @@ import java.util.Collections;
 
 public class Conductor {
 
-    //================================================================================
-    // Properties
-    //================================================================================
+    private static final Logger LOG = LoggerFactory.getLogger(Conductor.class);
 
-    private static Settings settings;
-    private static VideoParts videoParts;
-    private static ArrayList<BufferedImage> ocarinaSprites;
+    private static final double SECOND_AS_MS = 1000.;
+
+    private static VideoConfig videoConfig;
+    private static TextConfig textConfig;
     private static ArrayList<BufferedImage> imageFrames;
 
-    //================================================================================
-    // General methods
-    //================================================================================
+    public static void start(String[] args) throws CommandLineException, NoteProcessingException, FrameConstructionException, ParseException {
 
-    public static void start(String[] args) throws CommandLineException, NoteProcessingException, FrameConstructionException {
-
-        parseCommandLine(args);
+        boolean isLoaded = parseCommandLine(args);
+        if (!isLoaded) {
+            return;
+        }
 
         createImageFrames();
 
@@ -43,17 +45,22 @@ public class Conductor {
         cleanUp();
     }
 
-    private static void parseCommandLine(String[] args) throws CommandLineException {
-        CmdParser parser = new CmdParser(args);
-        parser.loadFromCmdLine();
+    private static boolean parseCommandLine(String[] args) throws CommandLineException, ParseException {
+        Optional<CommandLine> parser = CmdParser.parseCmdLine(args);
+        if (parser.isPresent()) {
+            videoConfig = CmdParser.loadVideoConfig(parser.get());
+            textConfig = CmdParser.loadTextConfig(parser.get());
+            return true;
+        }
+        return false;
     }
 
     private static void createImageFrames() {
         // Get image sprites
-        ocarinaSprites = NoteToImage.mapNotesToImages(videoParts.getMidiNotes());
+        ArrayList<BufferedImage> ocarinaSprites = NoteToImage.mapNotesToImages(videoConfig.getMidiNotes());
 
         // Construct image frame
-        ImageFactory imageFactory = new ImageFactory(settings, videoParts);
+        ImageFactory imageFactory = new ImageFactory(videoConfig);
         imageFrames = imageFactory.createImages(ocarinaSprites);
     }
 
@@ -61,49 +68,38 @@ public class Conductor {
         ArrayList<Double> frameDurations = new ArrayList<>();
         // Intro frame durations
         frameDurations.addAll(Collections.nCopies(CustomText.getIntroText().size(),
-                1000.00 * videoParts.getMidiFile().getTicksInMs()));
+                SECOND_AS_MS * videoConfig.getMidiFile().getTicksInMs()));
 
         // Played note frame durations
         frameDurations.addAll(NoteExtractor.extractDurations(
-                videoParts.getMidiNotes(), videoParts.getOffNotes(), videoParts.getMidiFile().getTicksInMs()));
+                videoConfig.getMidiNotes(), videoConfig.getOffNotes(), videoConfig.getMidiFile().getTicksInMs()));
 
         // Outro frame durations
         frameDurations.addAll(Collections.nCopies(CustomText.getOutroText().size(),
-                1000.00 * videoParts.getMidiFile().getTicksInMs()));
+                SECOND_AS_MS * videoConfig.getMidiFile().getTicksInMs()));
         return frameDurations;
     }
 
     private static ArrayList<BufferedImage> createVideoFrames(
             ArrayList<Double> frameDurations) {
-        return VideoFactory.getVideoFrames(imageFrames, frameDurations, settings.getFramerate());
+        return VideoFactory.getVideoFrames(imageFrames, frameDurations, videoConfig.getFramerate());
     }
 
     private static void outputVideo(ArrayList<BufferedImage> videoFrames, ArrayList<Double> frameDurations) {
         FFMpeg ffMpeg = new FFMpeg();
-        Double audioOffset = settings.getAudioOffset();
+        double audioOffset = videoConfig.getAudioOffset();
         for(int i = 0; i < CustomText.getIntroText().size(); i++) {
-            audioOffset += frameDurations.get(i) / 1000;
+            audioOffset += frameDurations.get(i) / SECOND_AS_MS;
         }
-        ffMpeg.outputTutorial(videoFrames ,videoParts.getOutputFilePath(), videoParts.getAudio().getAbsolutePath(),
-                settings.getFramerate(), audioOffset);
+        ffMpeg.outputTutorial(videoFrames, videoConfig.getOutputFilePath(), videoConfig.getAudio().getAbsolutePath(),
+                videoConfig.getFramerate(), audioOffset);
     }
 
     private static void cleanUp() {
-        File file = new File("src/main/resources/temp/temp.wav");
+        String wavPath = "src/main/resources/temp/temp.wav";
+        File file = new File(wavPath);
         if(file.delete()) {
-            System.out.println("Temporary audio file deleted");
+            LOG.info("Temporary audio file {} deleted", wavPath);
         }
-    }
-
-    //================================================================================
-    // Accessors
-    //================================================================================
-
-    public static void setSettings(Settings settings) {
-        Conductor.settings = settings;
-    }
-
-    public static void setVideoParts(VideoParts videoParts) {
-        Conductor.videoParts = videoParts;
     }
 }

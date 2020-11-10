@@ -7,15 +7,14 @@ import com.itextpdf.text.pdf.PdfWriter;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
 public class PdfOutput {
 
-    private String outputDest;
-    private ArrayList<BufferedImage> images;
+    private final String outputDest;
+    private final ArrayList<BufferedImage> images;
 
     public PdfOutput(String outputDest, ArrayList<BufferedImage> images) {
         this.outputDest = outputDest + ".pdf";
@@ -39,7 +38,6 @@ public class PdfOutput {
         }
         catch (IOException | DocumentException e) {
             System.out.println("Failed to output pdf file to " + outputDest);
-            return;
         }
     }
 }

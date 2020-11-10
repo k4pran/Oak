@@ -30,7 +30,7 @@ public class FFMpeg {
                     "-pix_fmt", "yuv420p",
                     "-crf", "23",
                     "-r", "24",
-                    "-vf", "scale=720x406,setdar=16:9",
+//                    "-vf", "scale=720x406,setdar=16:9",
                     outputFile);
 
             pb.redirectErrorStream(true);
