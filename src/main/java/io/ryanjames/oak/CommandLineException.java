@@ -1,0 +1,7 @@
+package io.ryanjames.oak;
+
+public class CommandLineException extends Exception {
+    public CommandLineException(String message) {
+        super(message);
+    }
+}
