@@ -225,7 +225,7 @@ public class CmdParser {
     }
 
     public static VideoConfig loadVideoConfig(CommandLine cmd) throws CommandLineException {
-        return new VideoConfig(cmd);
+        return VideoConfig.fromCmd(cmd);
     }
 
     public static TextConfig loadTextConfig(CommandLine cmd) throws CommandLineException {

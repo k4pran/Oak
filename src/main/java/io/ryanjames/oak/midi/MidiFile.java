@@ -5,38 +5,34 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Contains midi file along with useful midi information for convenient access.
+ * Immutable MIDI file metadata + sequence container.
  */
-
-public class MidiFile {
-
-    //================================================================================
-    // Properties
-    //================================================================================
-
-    private File midiFile;
-    private Sequence sequence;
-    private int resolution;
-    private Double tempo;
-    private Double ticksInMs;
+public final class MidiFile {
 
     //================================================================================
-    // Constructor
+    // Properties (pure data)
     //================================================================================
 
-    public MidiFile(File midiFile) throws MidiFileLoaderException {
-        try {
-            this.midiFile = midiFile;
-            this.sequence = MidiSystem.getSequence(midiFile);
-            Sequencer sequencer = MidiSystem.getSequencer();
-            sequencer.setSequence(sequence);
-            this.resolution = sequence.getResolution();
-            this.tempo = new Double(sequencer.getTempoInBPM());
-            this.ticksInMs = 60000 / (tempo * resolution);
-        }
-        catch(IOException | MidiUnavailableException | InvalidMidiDataException e) {
-            throw new MidiFileLoaderException("Unable to load midi file");
-        }
+    private final File file;
+    private final Sequence sequence;
+    private final int resolution;
+    private final double tempoBpm;
+    private final double ticksInMs;
+
+    //================================================================================
+    // Private constructor (only Builder can create)
+    //================================================================================
+
+    private MidiFile(File file,
+                     Sequence sequence,
+                     int resolution,
+                     double tempoBpm,
+                     double ticksInMs) {
+        this.file = file;
+        this.sequence = sequence;
+        this.resolution = resolution;
+        this.tempoBpm = tempoBpm;
+        this.ticksInMs = ticksInMs;
     }
 
     //================================================================================
@@ -44,7 +40,7 @@ public class MidiFile {
     //================================================================================
 
     public File getFile() {
-        return midiFile;
+        return file;
     }
 
     public Sequence getSequence() {
@@ -55,11 +51,66 @@ public class MidiFile {
         return resolution;
     }
 
-    public Double getTempo() {
-        return tempo;
+    public double getTempoBpm() {
+        return tempoBpm;
     }
 
-    public Double getTicksInMs() {
+    public double getTicksInMs() {
         return ticksInMs;
+    }
+
+    //================================================================================
+    // Static Builder / Loader
+    //================================================================================
+
+    public static final class Loader {
+
+        private Loader() {}
+
+        public static MidiFile load(File midiFile) throws MidiFileLoaderException {
+            try {
+                Sequence sequence = MidiSystem.getSequence(midiFile);
+
+                int resolution = sequence.getResolution();
+                double tempo = extractTempo(sequence);
+                double ticksInMs = 60000.0 / (tempo * resolution);
+
+                return new MidiFile(
+                        midiFile,
+                        sequence,
+                        resolution,
+                        tempo,
+                        ticksInMs
+                );
+
+            } catch (IOException | InvalidMidiDataException e) {
+                throw new MidiFileLoaderException("Unable to load MIDI file", e);
+            }
+        }
+
+        /**
+         * Extract tempo from first tempo meta event (0x51).
+         * Falls back to 120 BPM if none found.
+         */
+        private static double extractTempo(Sequence sequence) {
+            for (Track track : sequence.getTracks()) {
+                for (int i = 0; i < track.size(); i++) {
+                    MidiEvent event = track.get(i);
+                    MidiMessage message = event.getMessage();
+                    if (message instanceof MetaMessage meta) {
+                        if (meta.getType() == 0x51) {
+                            byte[] data = meta.getData();
+                            int mpq = ((data[0] & 0xFF) << 16)
+                                    | ((data[1] & 0xFF) << 8)
+                                    | (data[2] & 0xFF);
+                            return 60_000_000.0 / mpq;
+                        }
+                    }
+                }
+            }
+
+            // Default MIDI tempo if none specified
+            return 120.0;
+        }
     }
 }

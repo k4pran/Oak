@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Various methods for extracting information from midi notes.
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 
 public class NoteToImage {
 
-    public static ArrayList<BufferedImage> mapNotesToImages(ArrayList<MidiNote> notes) {
+    public static ArrayList<BufferedImage> mapNotesToImages(List<MidiNote> notes) {
         ArrayList<BufferedImage> ocarinaSprites = new ArrayList<>();
 
         System.out.println("Mapping notes to images...");

@@ -201,7 +201,7 @@ public class NoteExtractor {
     }
 
     public static ArrayList<Double> extractDurations(
-            ArrayList<MidiNote> onNotes, ArrayList<MidiNote> offNotes, double tickInMs) {
+            ArrayList<SimpleNote> onNotes, ArrayList<SimpleNote> offNotes, double tickInMs) {
 
         if (onNotes.isEmpty() || offNotes.isEmpty()) {
             return new ArrayList<>();
@@ -273,11 +273,6 @@ public class NoteExtractor {
     public void updateNoteRange(int note) {
         if (note < lowestNote) lowestNote = note;
         if (note > highestNote) highestNote = note;
-    }
-
-    public void transposeSequence() {
-        this.sequence = Transposer.fitToRange(
-                sequence, currentTrackIndex, lowestNote, highestNote, Ocarinas.C_SOPRANO);
     }
 
     public Sequence getSequence() {

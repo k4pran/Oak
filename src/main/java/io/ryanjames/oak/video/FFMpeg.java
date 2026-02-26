@@ -56,6 +56,11 @@ public class FFMpeg {
             pb.redirectErrorStream(true);
             pb.redirectOutput(FFMpegLog);
 
+            double videoSecs = images.size() / (double) fr;
+            System.out.println("VIDEO seconds=" + videoSecs);
+            System.out.println("AUDIO offset seconds=" + offset);
+            System.out.println("AUDIO file=" + audioFile);
+
             Process p = pb.start();
             LOG.info("Running: {}", String.join(" ", pb.command()));
 

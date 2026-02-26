@@ -161,16 +161,15 @@ public final class MidiToWavRenderer {
 
         tune(receiver);
 
-        ShortMessage sm = new ShortMessage();
-        sm.setMessage(ShortMessage.PROGRAM_CHANGE, 0, 72, 0);
-        receiver.send(sm, 4); // TODO 2-7 works, anything outside doesn't - no idea...
+//        ShortMessage sm = new ShortMessage();
+//        sm.setMessage(ShortMessage.PROGRAM_CHANGE, 0, 72, 0);
+//        receiver.send(sm, 0); // TODO 2-7 works, anything outside doesn't - no idea...
 
         // Play Sequence into AudioSynthesizer Receiver.
         double total = send(sequence, receiver);
 
         // Calculate how long the WAVE file needs to be.
-        final long len = (long) (stream.getFormat().getFrameRate() *
-                total);
+        final long len = (long) (stream.getFormat().getFrameRate() * (total));
         stream = new AudioInputStream(stream, stream.getFormat(), len);
 
         // Write WAVE file to disk.

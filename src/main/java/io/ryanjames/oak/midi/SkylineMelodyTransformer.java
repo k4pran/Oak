@@ -11,43 +11,42 @@ import java.util.*;
  * - selected NOTE_ON/NOTE_OFF events
  * - copied MetaMessages (tempo/time-signature/etc.) from the original sequence
  */
-public class SkylineMelodyExtractor implements MidiExtractor {
+public class SkylineMelodyTransformer implements SequenceTransformer {
 
     @Override
-    public Sequence extract(Sequence input) {
+    public Sequence transform(Sequence input) {
         Objects.requireNonNull(input, "input sequence");
 
         final List<Note> notes = parseNotes(input);
         final List<MetaEvent> metas = collectMetaEvents(input);
 
         try {
+            // New 1-track sequence (use the existing track; don't createTrack() again)
             Sequence out = new Sequence(input.getDivisionType(), input.getResolution(), 1);
             Track outTrack = out.getTracks()[0];
 
-            // Copy meta messages (tempo, time signature, track name, etc.)
+            // Copy meta messages (tempo, time signature, track name, etc.) using the copy util
             for (MetaEvent me : metas) {
-                outTrack.add(new MidiEvent(me.message, me.tick));
+                MidiMessage msgCopy = MidiCopyUtils.deepCopyMessage(me.message);
+                outTrack.add(new MidiEvent(msgCopy, me.tick));
             }
 
             // Skyline-select note segments
             List<NoteSegment> segments = skylineSegments(notes);
 
             // Emit segments as NOTE_ON/NOTE_OFF pairs on channel 0
-            // (ocarina tutorial: single monophonic line)
             for (NoteSegment seg : segments) {
                 if (seg.endTick <= seg.startTick) continue;
 
-                outTrack.add(new MidiEvent(noteOn(0, seg.pitch, seg.velocity), seg.startTick));
-                outTrack.add(new MidiEvent(noteOff(0, seg.pitch, 0), seg.endTick));
+                outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(noteOn(0, seg.pitch, seg.velocity)), seg.startTick));
+                outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(noteOff(0, seg.pitch, 0)), seg.endTick));
             }
 
-            // Ensure End-of-Track meta exists at end
-            long endTick = computeEndTick(outTrack);
-            outTrack.add(new MidiEvent(endOfTrack(), endTick));
+            // Ensure End-of-Track meta exists at end (use the util)
+            MidiCopyUtils.ensureEndOfTrack(outTrack);
 
             return out;
         } catch (InvalidMidiDataException e) {
-            // Should be rare here since we're constructing valid ShortMessages/MetaMessages
             throw new IllegalStateException("Failed to construct extracted MIDI sequence", e);
         }
     }

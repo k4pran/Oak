@@ -7,15 +7,61 @@ public class VideoFactory {
 
     private static final int SECOND_AS_MS = 1000;
 
-    private static final ArrayList<BufferedImage> frames = new ArrayList<>();
+    public static ArrayList<BufferedImage> getVideoFrames(
+            ArrayList<BufferedImage> imageStills,
+            ArrayList<Double> frameDurations,
+            int framerate
+    ) {
 
-    public static ArrayList<BufferedImage> getVideoFrames(ArrayList<BufferedImage> imageStills, ArrayList<Double> frameDurations,
-                                                          int framerate) {
-        for(int imageIndex = 0; imageIndex < imageStills.size(); imageIndex++) {
-            for(int j = 0; j < Math.rint((framerate * frameDurations.get(imageIndex)) / SECOND_AS_MS); j++) {
-                frames.add(imageStills.get(imageIndex));
+        ArrayList<BufferedImage> frames = new ArrayList<>();
+
+        double cumulativeMs = 0.0;
+        int cumulativeFramesExpected = 0;
+        int cumulativeFramesActual = 0;
+
+        System.out.println("---- VIDEO FRAME GENERATION DEBUG ----");
+
+        for (int i = 0; i < imageStills.size(); i++) {
+
+            double durMs = frameDurations.get(i);
+            cumulativeMs += durMs;
+
+            int expectedFrames =
+                    (int) Math.round(durMs * framerate / (double) SECOND_AS_MS);
+
+            int expectedTotalFrames =
+                    (int) Math.round(cumulativeMs * framerate / (double) SECOND_AS_MS);
+
+            int framesToEmit =
+                    expectedTotalFrames - cumulativeFramesActual;
+
+            System.out.printf(
+                    "Segment %3d | durMs=%8.3f | expectedFrames=%3d | emit=%3d | cumExpected=%4d | cumActual(before)=%4d%n",
+                    i,
+                    durMs,
+                    expectedFrames,
+                    framesToEmit,
+                    expectedTotalFrames,
+                    cumulativeFramesActual
+            );
+
+            for (int j = 0; j < framesToEmit; j++) {
+                frames.add(imageStills.get(i));
             }
+
+            cumulativeFramesActual += framesToEmit;
+            cumulativeFramesExpected += expectedFrames;
         }
+
+        double videoLengthMs =
+                cumulativeFramesActual * 1000.0 / framerate;
+
+        System.out.println("--------------------------------------");
+        System.out.printf("Total duration from MIDI: %.3f ms%n", cumulativeMs);
+        System.out.printf("Total frames emitted:     %d%n", cumulativeFramesActual);
+        System.out.printf("Video length from frames: %.3f ms%n", videoLengthMs);
+        System.out.printf("Drift: %.3f ms%n", videoLengthMs - cumulativeMs);
+
         return frames;
     }
 }

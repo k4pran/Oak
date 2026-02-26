@@ -2,68 +2,47 @@ package io.ryanjames.oak;
 
 import io.ryanjames.oak.color.ColorConversions;
 import io.ryanjames.oak.imagemod.ImageProcessingException;
-import io.ryanjames.oak.imagemod.ImageTransform;
-import io.ryanjames.oak.midi.*;
 import org.apache.commons.cli.CommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.ryanjames.oak.validation.Validator;
 
-import javax.imageio.ImageIO;
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Sequence;
-import java.awt.*;
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 
 public class VideoConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(VideoConfig.class);
 
-    private static final int DEFAULT_DIMS = 3;
     private static final int MIN_FPS = 60;
     private static final int MAX_FPS = 144;
-    private static final int DEFAULT_FPS = 60;
-    private static final boolean AUDIO_FROM_MIDI_DEFAULT = true;
 
     private boolean outputPdf;
-    private boolean outputVid;
-    private int framerate;
+    private boolean outputVid = true;
+    private int framerate = 60;
     private double audioOffset;
-    private Color noteOnColor;
-    private Color noteOffColor;
-    private Color previewNoteColor;
-    private int dims;
-    private MidiFile midiFile;
-    private Sequence sequence;
-    private ArrayList<MidiNote> midiNotes;
-    private ArrayList<MidiNote> offNotes;
-    private File background;
-    private File audio;
+    private Color noteOnColor = Color.RED;
+    private Color noteOffColor = Color.BLUE;
+    private Color previewNoteColor = Color.GREEN;
+    private int dims = 3;
+    private String midiFilePath;
+    private File background; // Todo likely also remove
+    private String audioFilePath;
     private String outputFilePath;
-    private boolean audioFromMidi;
+    private boolean audioFromMidi = true;
 
-    private final CommandLine cmd;
-
-    public VideoConfig(CommandLine cmd) throws CommandLineException {
-        this.cmd = cmd;
-        framerate = DEFAULT_FPS;
-        dims = DEFAULT_DIMS;
-        audioFromMidi = AUDIO_FROM_MIDI_DEFAULT;
-        noteOffColor = Color.BLUE;
-        noteOnColor = Color.RED;
-        previewNoteColor = Color.GREEN;
-
-        this.load();
+    public static VideoConfig fromCmd(CommandLine cmd) throws CommandLineException {
+        VideoConfig config = new VideoConfig();
+        config.load(cmd);
+        return config;
     }
 
-    private void load() throws CommandLineException {
+    private void load(CommandLine cmd) throws CommandLineException {
 
         outputPdf = cmd.hasOption("pdf");
         outputVid = cmd.hasOption("vid");
@@ -98,13 +77,11 @@ public class VideoConfig {
                     framerate = fps;
                 }
                 else {
-                    LOG.warn("Invalid fps. Allowed values range: {}-{}. Defaulting to {}", MIN_FPS, MAX_FPS, DEFAULT_FPS);
-                    framerate = DEFAULT_FPS;
+                    LOG.warn("Invalid fps. Allowed values range: {}-{}. Defaulting to {}", MIN_FPS, MAX_FPS, framerate);
                 }
             }
             catch(NumberFormatException e) {
-                LOG.warn("Invalid fps. Must be numerical value of number of frames per second, defaulting to {}", DEFAULT_FPS);
-                framerate = DEFAULT_FPS;
+                LOG.warn("Invalid fps. Must be numerical value of number of frames per second, defaulting to {}", framerate);
             }
         }
 
@@ -118,8 +95,8 @@ public class VideoConfig {
         }
 
         if(cmd.hasOption("i")) {
-            String midiPath = cmd.getOptionValue("i");
-            loadMidiInput(midiPath);
+            this.midiFilePath = cmd.getOptionValue("i");
+//            loadMidiInput(midiPath);
         }
 
         if(cmd.hasOption("o")) {
@@ -160,7 +137,7 @@ public class VideoConfig {
 
         if(cmd.hasOption("a")) {
             if(Validator.isValidFile(cmd.getOptionValue("a"))) {
-                audio = new File(cmd.getOptionValue("a"));
+                audioFilePath = cmd.getOptionValue("a");
                 audioFromMidi = false;
             }
             else {
@@ -169,59 +146,9 @@ public class VideoConfig {
         }
         else {
             LOG.info("No audio file passed, creating audio from midi file");
-            audio = audioFromMidi();
+            audioFromMidi = true;
+            audioFilePath = "";
         }
-    }
-
-    private void loadMidiInput(String midiPath) throws CommandLineException {
-        try {
-            midiFile = new MidiFile(new File(midiPath));
-            this.sequence = midiFile.getSequence();
-
-//            MidiExtractor melodyExtractor = new SkylineMelodyExtractor();
-//            sequence = melodyExtractor.extract(sequence);
-            NoteExtractor noteExtractor = new NoteExtractor(sequence);
-            noteExtractor.renderSequence();
-
-            noteExtractor.transposeSequence();
-            this.midiNotes = noteExtractor.simpleToMidiNotes(noteExtractor.getSimpleOnNotes());
-            this.offNotes = noteExtractor.simpleToMidiNotes(noteExtractor.getSimpleOffNotes());
-            this.sequence = noteExtractor.getSequence();
-        }
-        catch (MidiFileLoaderException e) {
-            e.printStackTrace();
-            throw new CommandLineException("Failed to load midi file");
-        }
-    }
-
-    public File audioFromMidi() {
-        try {
-            String tempAudioDir = "src/main/resources/temp/";
-            boolean dirExists = mkDir(tempAudioDir);
-
-            if (!dirExists) {
-                throw new CommandLineException("Failed to create temporary audio file directory at " + tempAudioDir);
-            }
-
-            String tempAudioPath = tempAudioDir + "temp.wav";
-            MidiToWavRenderer wavRenderer = new MidiToWavRenderer();
-            wavRenderer.createWavFile(
-                    new File("src/main/resources/sounds/ocarina.sf2"),
-                    sequence,
-                    new File(tempAudioPath));
-            return new File(tempAudioPath);
-        }
-        catch (MidiUnavailableException | InvalidMidiDataException | IOException | CommandLineException e) {
-            throw new AudioRenderingException("Unable to render audio from midi", e);
-        }
-    }
-
-    private boolean mkDir(String dir) {
-        File targetDir = new File(dir);
-        if (!targetDir.exists() || !targetDir.isDirectory()) {
-            return targetDir.mkdir();
-        }
-        return true;
     }
 
     public boolean isOutputPdf() {
@@ -256,35 +183,23 @@ public class VideoConfig {
         return dims;
     }
 
-    public MidiFile getMidiFile() {
-        return midiFile;
-    }
-
-    public Sequence getSequence() {
-        return sequence;
-    }
-
-    public ArrayList<MidiNote> getMidiNotes() {
-        return midiNotes;
-    }
-
-    public ArrayList<MidiNote> getOffNotes() {
-        return offNotes;
+    public String getMidiFilePath() {
+        return midiFilePath;
     }
 
     public File getBackground() {
         return background;
     }
 
-    public File getAudio() {
-        return audio;
+    public String getAudioFilePath() {
+        return audioFilePath;
     }
 
     public String getOutputFilePath() {
         return outputFilePath;
     }
 
-    public boolean isAudioFromMidi() {
+    public boolean isAudioFromMidi() { // todo remove?
         return audioFromMidi;
     }
 }

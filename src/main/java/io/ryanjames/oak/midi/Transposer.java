@@ -3,11 +3,22 @@ package io.ryanjames.oak.midi;
 import javax.sound.midi.*;
 import java.util.ArrayList;
 
-public class Transposer {
+public class Transposer implements SequenceTransformer {
 
     public static int transposedStep = 0;
     private static String noteOnByte = "9-";
     private static String noteOffByte = "8-";
+    private int trackNum;
+    private int lowestNote;
+    private int highestNote;
+    private Ocarinas ocarina;
+
+    public Transposer(int trackNum, int lowestNote, int highestNote, Ocarinas ocarina) {
+        this.trackNum = trackNum;
+        this.lowestNote = lowestNote;
+        this.highestNote = highestNote;
+        this.ocarina = ocarina;
+    }
 
     /**
      * Validates a midi sequence's range and transposes to fit if necessary.
@@ -15,14 +26,13 @@ public class Transposer {
      * ocarina. It will take three preferred keys in order and try to fit them, if this fails, it will align the
      * lowest note with the lowest on the ocarinas range. If it still doesn't fit it will throw an exception.
      * @param sequence
-     * @param ocarina
      * @return
      */
-    public static Sequence fitToRange(Sequence sequence, int trackNum, int lowestNote, int highestNote, Ocarinas ocarina) {
+    public Sequence transform(Sequence sequence) {
         int lowerOcRange = OcarinaRanges.getLowerRange(ocarina);
         int higherOcRange = OcarinaRanges.getUpperRange(ocarina);
 
-        ArrayList<Integer> preferredKeys = Ocarinas.getPreferredKeys(ocarina);
+        ArrayList<Integer> preferredKeys = Ocarinas.getPreferredKeys(ocarina); // todo
 
         if(lowestNote < lowerOcRange && highestNote > higherOcRange) {
             throw new OutOfRangeException("Unable to transpose notes to fit ocarina range: " +
