@@ -24,8 +24,8 @@ public class DocumentOutputPipeline {
     }
 
 
-    public void run(List<BufferedImage> imageFrames) {
-        String outputDest = Paths.get(globalConfig.outputDir(), globalConfig.textConfig().getTitle() + ".pdf").toString();
+    public void run(List<BufferedImage> imageFrames, String outputDir, String title) {
+        String outputDest = Paths.get(outputDir, title + ".pdf").toString();
         this.pdfOutput.writePdf(outputDest, imageFrames);
     }
 }

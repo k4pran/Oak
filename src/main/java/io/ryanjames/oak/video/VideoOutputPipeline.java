@@ -25,7 +25,7 @@ public class VideoOutputPipeline {
         this.globalConfig = globalConfig;
     }
 
-    public void run(List<BufferedImage> videoFrames, List<Double> frameDurations, File audioFile) {
+    public void run(List<BufferedImage> videoFrames, List<Double> frameDurations, File audioFile, String outputDir) {
         FFMpeg ffMpeg = new FFMpeg();
         VideoConfig videoConfig = globalConfig.videoConfig();
 
@@ -33,7 +33,7 @@ public class VideoOutputPipeline {
         for(int i = 0; i < CustomText.getIntroText().size(); i++) {
             audioOffset += frameDurations.get(i) / SECOND_AS_MS;
         }
-        ffMpeg.outputTutorial(videoFrames, videoConfig.getOutputDir(), audioFile.getAbsolutePath(),
+        ffMpeg.outputTutorial(videoFrames, outputDir, audioFile.getAbsolutePath(),
                 videoConfig.getFramerate(), audioOffset);
     }
 }

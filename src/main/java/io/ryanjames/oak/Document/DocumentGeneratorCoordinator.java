@@ -1,7 +1,6 @@
 package io.ryanjames.oak.Document;
 
-import io.ryanjames.oak.audio.AudioPipeline;
-import io.ryanjames.oak.video.VideoFramePipeline;
+import io.ryanjames.oak.config.GlobalConfig;
 import io.ryanjames.oak.midi.MidiPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 public class DocumentGeneratorCoordinator {
@@ -20,14 +18,17 @@ public class DocumentGeneratorCoordinator {
     private final MidiPipeline midiPipeline;
     private final DocFramePipeline docFramePipeline;
     private final DocumentOutputPipeline documentOutputPipeline;
+    private final GlobalConfig globalConfig;
 
     @Inject
     public DocumentGeneratorCoordinator(MidiPipeline midiPipeline,
                                      DocFramePipeline docFramePipeline,
-                                     DocumentOutputPipeline documentOutputPipeline) {
+                                     DocumentOutputPipeline documentOutputPipeline,
+                                        GlobalConfig globalConfig) {
         this.midiPipeline = midiPipeline;
         this.docFramePipeline = docFramePipeline;
         this.documentOutputPipeline = documentOutputPipeline;
+        this.globalConfig = globalConfig;
     }
 
     public void generateDoc(File midiInput, File background) {
@@ -39,7 +40,7 @@ public class DocumentGeneratorCoordinator {
         List<BufferedImage> imageFrames = docFramePipeline.createImageFrames(midiPipelineResult.noteInfo(), background);
 
         // Doc Pipeline
-        documentOutputPipeline.run(imageFrames);
+        documentOutputPipeline.run(imageFrames, globalConfig.outputDir(), globalConfig.textConfig().getTitle());
 
         cleanUp();
     }

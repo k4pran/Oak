@@ -1,6 +1,7 @@
 package io.ryanjames.oak;
 
 import io.ryanjames.oak.audio.AudioPipeline;
+import io.ryanjames.oak.config.GlobalConfig;
 import io.ryanjames.oak.video.VideoFramePipeline;
 import io.ryanjames.oak.midi.MidiPipeline;
 import io.ryanjames.oak.video.VideoOutputPipeline;
@@ -18,40 +19,55 @@ public class VideoGeneratorCoordinator {
     private final AudioPipeline audioPipeline;
     private final VideoFramePipeline videoFramePipeline;
     private final VideoOutputPipeline videoOutputPipeline;
+    private final GlobalConfig globalConfig;
 
     @Inject
     public VideoGeneratorCoordinator(MidiPipeline midiPipeline,
                                      AudioPipeline audioPipeline,
                                      VideoFramePipeline videoFramePipeline,
-                                     VideoOutputPipeline videoOutputPipeline) {
+                                     VideoOutputPipeline videoOutputPipeline,
+                                     GlobalConfig globalConfig) {
         this.midiPipeline = midiPipeline;
         this.audioPipeline = audioPipeline;
         this.videoFramePipeline = videoFramePipeline;
         this.videoOutputPipeline = videoOutputPipeline;
+        this.globalConfig = globalConfig;
     }
 
     public void generateVideo(File midiInput, File background) {
 
+        RunArtifacts run = RunArtifacts.fromTitle(globalConfig.textConfig().getTitle(), globalConfig.outputDir());
+        run.persistInput("midi", midiInput);
+        run.persistInput("background", background);
+
+        String audioInputPath = globalConfig.videoConfig().getAudioFilePath();
+        if (audioInputPath != null && !audioInputPath.isBlank()) {
+            run.persistInput("audio", new File(audioInputPath));
+        }
+
         // Midi creation
         MidiPipeline.Result midiPipelineResult = midiPipeline.run(midiInput);
+        run.persistOutputMidi(midiPipelineResult.midiFile());
 
         // Audio creation
         File audioFile = audioPipeline.run(midiPipelineResult.midiFile());
+        run.persistOutputWav(audioFile);
 
         // Video frame creation
         VideoFramePipeline.Result imagePipelineResult = videoFramePipeline.run(midiPipelineResult.midiFile(), midiPipelineResult.noteInfo(), background);
 
         // Video output
-        videoOutputPipeline.run(imagePipelineResult.videoFrames(), imagePipelineResult.frameDurationsMs(), audioFile);
+        videoOutputPipeline.run(imagePipelineResult.videoFrames(), imagePipelineResult.frameDurationsMs(), audioFile, run.outputDir().toString());
 
-        cleanUp();
+        cleanUp(audioFile);
     }
 
-    private static void cleanUp() {
-        String wavPath = "src/main/resources/temp/temp.wav";
-        File file = new File(wavPath);
-        if(file.delete()) {
-            LOG.info("Temporary audio file {} deleted", wavPath);
+    private static void cleanUp(File audioFile) {
+        if (audioFile == null) {
+            return;
+        }
+        if (audioFile.delete()) {
+            LOG.info("Temporary audio file {} deleted", audioFile.getAbsolutePath());
         }
     }
 }
