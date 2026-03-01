@@ -1,5 +1,6 @@
 package io.ryanjames.oak.Document;
 
+import io.ryanjames.oak.RunArtifacts;
 import io.ryanjames.oak.config.GlobalConfig;
 import io.ryanjames.oak.midi.MidiPipeline;
 import org.slf4j.Logger;
@@ -33,14 +34,19 @@ public class DocumentGeneratorCoordinator {
 
     public void generateDoc(File midiInput, File background) {
 
+        RunArtifacts run = RunArtifacts.fromTitle(globalConfig.textConfig().getTitle(), globalConfig.outputDir());
+        run.persistInput("midi", midiInput);
+        run.persistInput("background", background);
+
         // Midi creation
         MidiPipeline.Result midiPipelineResult = midiPipeline.run(midiInput);
+        run.persistOutputMidi(midiPipelineResult.midiFile());
 
         // Video frame creation
         List<BufferedImage> imageFrames = docFramePipeline.createImageFrames(midiPipelineResult.noteInfo(), background);
 
         // Doc Pipeline
-        documentOutputPipeline.run(imageFrames, globalConfig.outputDir(), globalConfig.textConfig().getTitle());
+        documentOutputPipeline.run(imageFrames, run.outputDir().toString(), globalConfig.textConfig().getTitle());
 
         cleanUp();
     }

@@ -18,15 +18,15 @@ public class CustomText {
     private static ArrayList<String> outroText;
 
     public static void createTitleFont(String title, Color titleColor) {
-         titleText = new CustomText(title, new Font("Baghdad", Font.BOLD, 50),
+         titleText = new CustomText(title, new Font("Baghdad", Font.BOLD, 58),
                 titleColor.getRGB());
     }
 
     static {
-        previewText = new CustomText("Preview note", new Font("Baghdad", Font.ITALIC, 30),
+        previewText = new CustomText("Preview note", new Font("Baghdad", Font.ITALIC, 34),
                 ColorConversions.interrogateColor("white").getRGB());
 
-        generalText = new CustomText("", new Font("Baghdad", Font.BOLD, 20),
+        generalText = new CustomText("", new Font("Baghdad", Font.BOLD, 24),
                 ColorConversions.interrogateColor("white").getRGB());
 
         introText = new ArrayList<>();

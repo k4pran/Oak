@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import static io.ryanjames.oak.common.Constants.SECOND_AS_MS;
