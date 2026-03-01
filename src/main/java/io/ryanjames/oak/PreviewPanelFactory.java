@@ -1,7 +1,7 @@
 package io.ryanjames.oak;
 
-import io.ryanjames.oak.imagemod.Painter;
-import io.ryanjames.oak.imagemod.Pixel;
+import io.ryanjames.oak.image.Painter;
+import io.ryanjames.oak.image.Pixel;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

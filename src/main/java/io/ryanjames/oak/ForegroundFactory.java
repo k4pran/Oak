@@ -1,10 +1,10 @@
 package io.ryanjames.oak;
 
-import io.ryanjames.oak.imagemod.ImageTransform;
-import io.ryanjames.oak.imagemod.SpriteRendering;
+import io.ryanjames.oak.image.*;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Constructs the foreground part of the image including padding, coloring, and stitching together of ocarina
@@ -22,7 +22,7 @@ public class ForegroundFactory {
     private int width;
     private int height;
 
-    ArrayList<BufferedImage> foregrounds;
+    List<BufferedImage> foregrounds;
 
     public ForegroundFactory(int noteOnColor, int noteOffColor, boolean isFirstFrame, boolean isLastFrame) {
         foregrounds = new ArrayList<>();
@@ -44,9 +44,9 @@ public class ForegroundFactory {
         this.height = height;
     }
 
-    public BufferedImage createForeGround(ArrayList<BufferedImage> sprites, int rows, int cols) {
+    public BufferedImage createForeGround(List<BufferedImage> sprites, int rows, int cols) {
 
-        ArrayList<BufferedImage> foregroundParts;
+        List<BufferedImage> foregroundParts;
         if (isFirstFrame) {
             rows -= 1;
         }
@@ -54,10 +54,10 @@ public class ForegroundFactory {
         return stitchSprites(renderInactiveSprites(foregroundParts, noteOffColor), rows, cols);
     }
 
-    public ArrayList<BufferedImage> createForegrounds(ArrayList<BufferedImage> sprites, int rows, int cols) {
+    public List<BufferedImage> createForegrounds(List<BufferedImage> sprites, int rows, int cols) {
 
-        ArrayList<BufferedImage> processed = new ArrayList<>();
-        ArrayList<BufferedImage> foregroundParts;
+        List<BufferedImage> processed = new ArrayList<>();
+        List<BufferedImage> foregroundParts;
         BufferedImage tmp;
         int spriteCount = sprites.size();
 
@@ -65,7 +65,7 @@ public class ForegroundFactory {
             rows -= 1;
             foregroundParts = renderInactiveSprites(sprites, noteOffColor);
             if (scale) {
-                processed.add(ImageTransform.scale(
+                processed.add(ImageScaler.scale(
                         stitchSprites(renderInactiveSprites(foregroundParts, noteOffColor), rows, cols), width, height));
             }
             else {
@@ -78,7 +78,7 @@ public class ForegroundFactory {
             foregroundParts.set(i, renderActiveSprite(foregroundParts.get(i), noteOnColor));
             tmp = stitchSprites(foregroundParts, rows, cols);
             if (scale) {
-                tmp = ImageTransform.scale(tmp, width, height);
+                tmp = ImageScaler.scale(tmp, width, height);
             }
             processed.add(tmp);
         }
@@ -86,7 +86,7 @@ public class ForegroundFactory {
         if(isLastFrame) {
             foregroundParts = renderInactiveSprites(sprites, noteOffColor);
             if (scale) {
-                processed.add(ImageTransform.scale(stitchSprites(foregroundParts, rows, cols), width, height));
+                processed.add(ImageScaler.scale(stitchSprites(foregroundParts, rows, cols), width, height));
             }
             else {
                 processed.add(stitchSprites(foregroundParts, rows, cols));
@@ -102,7 +102,7 @@ public class ForegroundFactory {
         return SpriteRendering.addTransparency(sprite);
     }
 
-    public ArrayList<BufferedImage> renderInactiveSprites(ArrayList<BufferedImage> sprites, int color) {
+    public List<BufferedImage> renderInactiveSprites(List<BufferedImage> sprites, int color) {
         for(int i = 0; i < sprites.size(); i++) {
             sprites.set(i, SpriteRendering.colorSprite(sprites.get(i), color));
             sprites.set(i, SpriteRendering.addTransparency(sprites.get(i)));
@@ -110,16 +110,19 @@ public class ForegroundFactory {
         return sprites;
     }
 
-    public BufferedImage stitchSprites(ArrayList<BufferedImage> imageParts, int rows, int cols) {
+    public BufferedImage stitchSprites(List<BufferedImage> imageParts, int rows, int cols) {
         if(isFirstFrame) {
-            BufferedImage stitchedImage = ImageTransform.stitchImages(imageParts, rows, cols);
-            stitchedImage = ImageTransform.padImageBottom(stitchedImage, imageParts.get(0).getHeight());
-            return ImageTransform.padImageTop(stitchedImage, imageParts.get(0).getHeight());
+            imageParts = ImagePadder.padImages(imageParts, rows, cols);
+
+            BufferedImage stitchedImage = ImageStitcher.stitchImages(imageParts, rows, cols);
+            stitchedImage = ImagePadder.padImageBottom(stitchedImage, imageParts.get(0).getHeight());
+            return ImagePadder.padImageTop(stitchedImage, imageParts.get(0).getHeight());
         }
 
         else {
-            BufferedImage stitchedImage = ImageTransform.stitchImages(imageParts, rows, cols);
-            return ImageTransform.padImageBottom(stitchedImage, imageParts.get(0).getHeight());
+            imageParts = ImagePadder.padImages(imageParts, rows, cols);
+            BufferedImage stitchedImage = ImageStitcher.stitchImages(imageParts, rows, cols);
+            return ImagePadder.padImageBottom(stitchedImage, imageParts.get(0).getHeight());
         }
     }
 }

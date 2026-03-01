@@ -1,12 +1,14 @@
 package io.ryanjames.oak;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.ryanjames.oak.color.ColorConversionException;
 import io.ryanjames.oak.color.ColorConversions;
+import io.ryanjames.oak.config.ColorDeserializer;
 import org.apache.commons.cli.CommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -16,9 +18,14 @@ public class TextConfig {
 
     private static final Color DEFAULT_COLOR = Color.BLACK;
 
-    private final CommandLine cmd;
+    private CommandLine cmd;
     private String title;
+
+    @JsonDeserialize(using = ColorDeserializer.class)
     private Color titleColor;
+
+    public TextConfig() {
+    }
 
     public TextConfig(CommandLine cmd) {
         this.cmd = cmd;
@@ -52,5 +59,21 @@ public class TextConfig {
             ArrayList<String> outroList = new ArrayList<>(Arrays.asList(cmd.getOptionValues("outro")));
             CustomText.setOutroText(outroList);
         }
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Color getTitleColor() {
+        return titleColor;
+    }
+
+    public void setTitleColor(Color titleColor) {
+        this.titleColor = titleColor;
     }
 }

@@ -1,6 +1,7 @@
 package io.ryanjames.oak;
 
 import io.ryanjames.oak.config.ConfigLoadingException;
+import io.ryanjames.oak.config.VideoArgParser;
 import org.apache.commons.cli.*;
 
 import java.util.Optional;
@@ -225,7 +226,7 @@ public class CmdParser {
     }
 
     public static VideoConfig loadVideoConfig(CommandLine cmd) throws CommandLineException {
-        return VideoConfig.fromCmd(cmd);
+        return VideoArgParser.fromCmd(cmd);
     }
 
     public static TextConfig loadTextConfig(CommandLine cmd) throws CommandLineException {

@@ -1,0 +1,19 @@
+outputDir: "./output"
+
+videoConfig:
+  outputPdf: true
+  outputVid: true
+  framerate: 24
+  audioOffset: 0.0
+  trailingSilenceMs: 0.0
+  noteOnColor: "#FF0000"
+  noteOffColor: "#0000FF"
+  previewNoteColor: "#00FF00"
+  dims: 3
+  audioFilePath: ""
+  outputDir: "./output"
+  audioFromMidi: true
+
+textConfig:
+  title: "The Blue Prince"
+  titleColor: "#0000FF"

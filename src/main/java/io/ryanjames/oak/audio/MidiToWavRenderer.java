@@ -1,0 +1,270 @@
+package io.ryanjames.oak.audio;/*
+ *              _______
+ *             |__   __|
+ *                | | __ _ _ __ ___  ___  ___
+ *                | |/ _` | '__/ __|/ _ \/ __|
+ *                | | (_| | |  \__ \ (_) \__ \
+ *                |_|\__,_|_|  |___/\___/|___/
+ *
+ * -----------------------------------------------------------
+ *
+ * Tarsos is developed by Joren Six at IPEM, University Ghent
+ *
+ * -----------------------------------------------------------
+ *
+ *  Info: http://tarsos.0110.be
+ *  Github: https://github.com/JorenSix/Tarsos
+ *  Releases: http://0110.be/releases/Tarsos/
+ *
+ *  Tarsos includes some source code by various authors,
+ *  for credits, license and info: see README.
+ *
+ */
+
+
+
+/*
+ * Uses a modified version of a file of the
+ * <a href="http://www.jfugue.org/download.html">JFugue</a>
+ * API for Music Programming.
+ * JFugue - API for Music Programming
+ * Copyright (C) 2003-2008  Karl Helgason and David Koelle
+ * http://www.jfugue.org
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or any later version.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301  USA
+ */
+
+import com.sun.media.sound.AudioSynthesizer;
+import io.ryanjames.oak.midi.MidiCommon;
+import io.ryanjames.oak.midi.MidiUtils;
+
+import javax.sound.midi.*;
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * <p>
+ * Uses a modified version of a file of the <a
+ * href="http://www.jfugue.org/download.html">JFugue</a> API for Music
+ * Programming. More precisely the <a
+ * href="http://www.jfugue.org/code/Midi2WavRenderer.java"
+ * >Midi2WavRenderer.java</a> file.
+ * </p>
+ *
+ * @author Karl Helgason
+ * @author David Koelle
+ * @author Joren Six
+ */
+public final class MidiToWavRenderer {
+
+    /**
+     * Log messages.
+     */
+    private static final Logger LOG = Logger.getLogger(MidiToWavRenderer.class.getName());
+
+    /**
+     * The synth used to render the audio.
+     */
+    private final transient AudioSynthesizer synth;
+
+    private double[] rebasedTuning;
+
+    public MidiToWavRenderer() throws MidiUnavailableException, InvalidMidiDataException, IOException {
+        try {
+            synth = (AudioSynthesizer) MidiSystem.getSynthesizer();
+        } catch (ClassCastException e) {
+            throw new Error("Please make sure Gervill is included in the classpath: "
+                    + "it should be de default synth. These are the currently installed synths: "
+                    + MidiSystem.getMidiDeviceInfo().toString(), e);
+        }
+    }
+
+    private Soundbank loadSoundbank(final File soundbankFile) throws MidiUnavailableException,
+            InvalidMidiDataException, IOException {
+        return MidiSystem.getSoundbank(soundbankFile);
+    }
+
+    /**
+     * Changes the tuning of the synth.
+     *
+     * @param tuning
+     * @throws InvalidMidiDataException
+     * @throws IOException
+     * @throws MidiUnavailableException
+     */
+    public void setTuning(final double[] tuning) throws IOException, InvalidMidiDataException,
+            MidiUnavailableException {
+        rebasedTuning = MidiCommon.tuningFromPeaks(tuning);
+    }
+
+    /**
+     * Simple convenience method to allow midi files to be passed instead of a sequence.
+     * @param soundbankFile
+     * @param midiFile
+     * @param outputFile
+     * @throws MidiUnavailableException
+     * @throws InvalidMidiDataException
+     * @throws IOException
+     */
+    public void createWavFile(final File soundbankFile, final File midiFile, final File outputFile)
+            throws MidiUnavailableException, InvalidMidiDataException, IOException {
+        final Sequence sequence = MidiSystem.getSequence(midiFile);
+        createWavFile(soundbankFile, sequence, outputFile);
+    }
+
+    /**
+     * Creates a WAV file based on the Sequence, using the sounds from the
+     * specified soundbank; to prevent memory problems, this method asks for an
+     * array of patches (instruments) to load.
+     *
+     * @param soundbankFile
+     * @param sequence
+     * @param outputFile
+     * @throws MidiUnavailableException
+     * @throws InvalidMidiDataException
+     * @throws IOException
+     */
+    public void createWavFile(final File soundbankFile, final Sequence sequence, final File outputFile)
+            throws MidiUnavailableException, InvalidMidiDataException, IOException {
+        // Load soundbank
+        final Soundbank soundbank = loadSoundbank(soundbankFile);
+
+        // Open the Synthesizer and load the requested instruments
+        final AudioFormat format = new AudioFormat(48000f, 24, 2, true, false);
+        final Map<String, Object> map = new HashMap<String, Object>();
+        map.put("interpolation", "sinc");
+        map.put("max polyphony", "256");
+        map.put("reverb", "true");
+        map.put("chorus", "true");
+        AudioInputStream stream = synth.openStream(format, map);
+
+        final Instrument[] instruments = soundbank.getInstruments();
+        for (final Instrument instrument : instruments) {
+            synth.loadInstrument(instrument);
+        }
+
+        Receiver receiver = synth.getReceiver();
+
+        tune(receiver);
+
+        // Play Sequence into AudioSynthesizer Receiver.
+        double total = send(sequence, receiver);
+
+        // Let releases + FX ring out
+        double tailSeconds = 2.0;
+        total += tailSeconds;
+
+        // All Notes Off / All Sound Off near the end
+        sendAllNotesOff(receiver, (long)((total - 0.1) * 1_000_000)); // 100ms before end
+
+        // Calculate how long the WAVE file needs to be.
+        long len = (long) (stream.getFormat().getFrameRate() * total);
+        stream = new AudioInputStream(stream, stream.getFormat(), len);
+
+        // Write WAVE file to disk.
+        AudioSystem.write(stream, AudioFileFormat.Type.WAVE, outputFile);
+
+        this.synth.close();
+    }
+
+    /**
+     * Send entry MIDI Sequence into Receiver using time stamps.
+     *
+     * @return The total length of the sequence.
+     */
+    private double send(final Sequence seq, final Receiver recv) throws InvalidMidiDataException {
+        assert seq.getDivisionType() == Sequence.PPQ;
+
+        final Track[] tracks = seq.getTracks();
+        final int[] trackspos = new int[tracks.length];
+
+        int mpq = 500000;
+        final int seqres = seq.getResolution();
+        long lasttick = 0;
+        long curtime = 0;
+
+
+        while (true) {
+            MidiEvent selevent = null;
+            int seltrack = -1;
+
+            for (int i = 0; i < tracks.length; i++) {
+                int trackpos = trackspos[i];
+                Track track = tracks[i];
+                if (trackpos < track.size()) {
+                    MidiEvent event = track.get(trackpos);
+                    if (selevent == null || event.getTick() < selevent.getTick()) {
+                        selevent = event;
+                        seltrack = i;
+                    }
+                }
+            }
+            if (seltrack == -1) break;
+
+            trackspos[seltrack]++;
+
+            long tick = selevent.getTick();
+            curtime += (tick - lasttick) * mpq / seqres;
+            lasttick = tick;
+
+            MidiMessage msg = selevent.getMessage();
+
+            if (msg instanceof MetaMessage meta) {
+                if (meta.getType() == 0x51) {
+                    byte[] data = meta.getData();
+                    mpq = (data[0] & 0xff) << 16 | (data[1] & 0xff) << 8 | (data[2] & 0xff);
+                }
+            } else if (recv != null) {
+                recv.send(msg, curtime); // <-- offset everything
+            }
+        }
+        return (curtime) / 1_000_000.0;
+    }
+
+    private void tune(final Receiver recv) {
+        try {
+            if (rebasedTuning != null) {
+                for (int i = 0; i < 16; i++) {
+                    MidiUtils.sendTunings(recv, i, 0, "african", rebasedTuning);
+                    MidiUtils.sendTuningChange(recv, i, 0);
+                }
+            }
+        } catch (final IOException e) {
+            LOG.log(Level.SEVERE, e.getMessage(), e);
+        } catch (final InvalidMidiDataException e) {
+            LOG.log(Level.SEVERE, e.getMessage(), e);
+        }
+    }
+
+    private static void sendAllNotesOff(Receiver r, long whenUs) {
+        try {
+            for (int ch = 0; ch < 16; ch++) {
+                ShortMessage allNotesOff = new ShortMessage();
+                allNotesOff.setMessage(ShortMessage.CONTROL_CHANGE, ch, 123, 0); // All Notes Off
+                r.send(allNotesOff, whenUs);
+
+                ShortMessage allSoundOff = new ShortMessage();
+                allSoundOff.setMessage(ShortMessage.CONTROL_CHANGE, ch, 120, 0); // All Sound Off
+                r.send(allSoundOff, whenUs + 1000); // +1ms
+            }
+        } catch (InvalidMidiDataException ignored) { }
+    }
+}

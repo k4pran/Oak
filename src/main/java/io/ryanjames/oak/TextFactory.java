@@ -1,6 +1,6 @@
 package io.ryanjames.oak;
 
-import io.ryanjames.oak.imagemod.Movement;
+import io.ryanjames.oak.image.Movement;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 

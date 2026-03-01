@@ -1,9 +1,23 @@
 package io.ryanjames.oak.midi;
 
-import javax.sound.midi.*;
+import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiMessage;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Track;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 /**
  * Produces a human-readable linear “timeline” of a MIDI Sequence:
@@ -73,6 +87,8 @@ public final class MidiSequenceNarrator {
         // Pair notes into "note segments" with duration (ms)
         List<NoteSpan> noteSpans = NoteSpan.pair(events, tempoMapper, opt.channelFilter, opt.trackFilter);
 
+        NoteRange noteRange = NoteRange.fromSpans(noteSpans);
+
         // Build timeline: meta changes + program/control + note spans + (optional) raw
         List<TimelineLine> timeline = buildTimeline(events, noteSpans, tempoMapper, opt);
 
@@ -120,6 +136,7 @@ public final class MidiSequenceNarrator {
         sb.append("NOTE_ON count: ").append(counts.noteOnCount).append('\n');
         sb.append("NOTE_OFF count: ").append(counts.noteOffCount).append('\n');
         sb.append("Distinct pitches: ").append(counts.distinctPitches).append('\n');
+        sb.append("Note range: ").append(noteRange.render()).append('\n');
         sb.append("Estimated length (ms): ").append(format3(tempoMapper.sequenceLengthMs)).append('\n');
 
         sb.append("\n==== TIMELINE (time-ordered) ====\n");
@@ -684,4 +701,31 @@ public final class MidiSequenceNarrator {
     // MidiSequenceNarrator n = new MidiSequenceNarrator();
     // String report = n.describe(sequence);
     // System.out.println(report);
+
+    private static final class NoteRange {
+        final Integer lowestPitch;
+        final Integer highestPitch;
+
+        private NoteRange(Integer lowestPitch, Integer highestPitch) {
+            this.lowestPitch = lowestPitch;
+            this.highestPitch = highestPitch;
+        }
+
+        static NoteRange fromSpans(List<NoteSpan> spans) {
+            Integer low = null;
+            Integer high = null;
+            for (NoteSpan span : spans) {
+                if (low == null || span.pitch < low) low = span.pitch;
+                if (high == null || span.pitch > high) high = span.pitch;
+            }
+            return new NoteRange(low, high);
+        }
+
+        String render() {
+            if (lowestPitch == null || highestPitch == null) {
+                return "(none)";
+            }
+            return MidiUtils.formatNoteName(lowestPitch) + "-" + MidiUtils.formatNoteName(highestPitch);
+        }
+    }
 }

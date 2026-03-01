@@ -1,25 +1,23 @@
 package io.ryanjames.oak.video;
 
-import io.ryanjames.oak.TextConfig;
 import me.tongfei.progressbar.ProgressBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
+import java.util.List;
 
 public class FFMpeg {
 
     private static final Logger LOG = LoggerFactory.getLogger(FFMpeg.class);
 
-    public void outputTutorial(ArrayList<BufferedImage> images, String outputFile, String audioFile, int fr, Double offset) {
+    public void outputTutorial(List<BufferedImage> images, String outputDir, String audioFile, int fr, Double offset) {
         try {
 
             String framerate = Integer.toString(fr);
             File FFMpegLog = new File("video.FFMpeg log.txt");
+            String outputFile = outputDir + "/tutorial.mp4";
 
             // Create args
             int width = images.get(0).getWidth();
@@ -40,7 +38,9 @@ public class FFMpeg {
                     "-i", audioFile,
 
                     // Delay audio by 2000ms (2 seconds)
-                    "-filter_complex", "[1:a]adelay=2000|2000[aud]",
+                    "-filter_complex",
+                    "[1:a]adelay=" + 2000 + "|" + 2000
+                            + ",volume=0.9,aresample=48000:resampler=soxr:dither_method=triangular[aud]",
 
                     "-map", "0:v",
                     "-map", "[aud]",
@@ -49,6 +49,9 @@ public class FFMpeg {
                     "-pix_fmt", "yuv420p",
                     "-crf", "23",
                     "-c:a", "aac",
+                    "-b:a", "256k",
+                    "-ar", "48000",
+
 
                     outputFile
             );

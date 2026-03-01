@@ -2,18 +2,19 @@ package io.ryanjames.oak;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.List;
 
 public class VideoFactory {
 
     private static final int SECOND_AS_MS = 1000;
 
-    public static ArrayList<BufferedImage> getVideoFrames(
-            ArrayList<BufferedImage> imageStills,
-            ArrayList<Double> frameDurations,
+    public static List<BufferedImage> getVideoFrames(
+            List<BufferedImage> imageStills,
+            List<Double> frameDurations,
             int framerate
     ) {
 
-        ArrayList<BufferedImage> frames = new ArrayList<>();
+        List<BufferedImage> frames = new ArrayList<>();
 
         double cumulativeMs = 0.0;
         int cumulativeFramesExpected = 0;
