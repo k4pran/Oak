@@ -1,10 +1,14 @@
 package io.ryanjames.oak.midi;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.sound.midi.*;
 import java.util.ArrayList;
 
 public class Transposer implements SequenceTransformer {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Transposer.class);
     public static int transposedStep = 0;
     private static String noteOnByte = "9-";
     private static String noteOffByte = "8-";
@@ -32,9 +36,15 @@ public class Transposer implements SequenceTransformer {
         int lowerOcRange = OcarinaRanges.getLowerRange(ocarina);
         int higherOcRange = OcarinaRanges.getUpperRange(ocarina);
 
-        ArrayList<Integer> preferredKeys = Ocarinas.getPreferredKeys(ocarina); // todo
+        if (lowestNote < 0 || highestNote < 0) {
+            return sequence;
+        }
 
-        if(lowestNote < lowerOcRange && highestNote > higherOcRange) {
+        String originalRange = MidiUtils.formatNoteName(lowestNote) + "-" + MidiUtils.formatNoteName(highestNote);
+
+        int span = highestNote - lowestNote;
+        int range = higherOcRange - lowerOcRange;
+        if (span > range) {
             throw new OutOfRangeException("Unable to transpose notes to fit ocarina range: " +
                     "\tOcarina: " + ocarina +
                     "\tLowest note in sequence: " + lowestNote +
@@ -42,40 +52,102 @@ public class Transposer implements SequenceTransformer {
                     "\tOcarina range: " + lowerOcRange + " - " + higherOcRange);
         }
 
-        else if(lowestNote < lowerOcRange || highestNote > higherOcRange) {
-            int stepUp = lowerOcRange - lowestNote;
-            transposedStep = stepUp;
+        int minShift = lowerOcRange - lowestNote;
+        int maxShift = higherOcRange - highestNote;
+        int shift = chooseShift(minShift, maxShift);
+        if (shift == 0) {
+            return sequence;
+        }
 
-            Track track = sequence.createTrack();
-            for(int i = 0; i < sequence.getTracks()[trackNum].size(); i++) {
-                MidiMessage midiMessage = sequence.getTracks()[trackNum].get(i).getMessage();
-                String status = MidiUtils.getSecondByte(midiMessage);
+        String newRange = MidiUtils.formatNoteName(lowestNote + shift) + "-" + MidiUtils.formatNoteName(highestNote + shift);
+        String direction = shift > 0 ? "raised" : "lowered";
 
-                if(status.equalsIgnoreCase(noteOnByte) || status.equalsIgnoreCase(noteOffByte)) {
-                    try {
-                        ShortMessage sm = transposeNote(sequence.getTracks()[trackNum].get(i), stepUp);
-                        MidiEvent midiEvent = new MidiEvent(sm, sequence.getTracks()[trackNum].get(i).getTick());
-                        track.add(midiEvent);
-                    }
-                    catch (InvalidMidiDataException e) {
-                        e.printStackTrace();
-                    }
-                }
-                else {
-                    track.add(sequence.getTracks()[0].get(i));
+        MidiKeyGuesser.KeyGuess keyGuess = MidiKeyGuesser.detectKey(sequence, trackNum, 0);
+        MidiKeyGuesser.KeyGuess newKeyGuess = MidiKeyGuesser.transpose(keyGuess, shift);
+
+        if (keyGuess != null && newKeyGuess != null) {
+            LOG.info("Transposing melody range {} -> {} ({} {} semitones); key {} -> {}",
+                    originalRange,
+                    newRange,
+                    direction,
+                    Math.abs(shift),
+                    keyGuess.render(),
+                    newKeyGuess.render());
+        } else {
+            LOG.info("Transposing melody range {} -> {} ({} {} semitones)",
+                    originalRange,
+                    newRange,
+                    direction,
+                    Math.abs(shift));
+        }
+
+        transposedStep = shift;
+
+        Track original = sequence.getTracks()[trackNum];
+        Track transposed = sequence.createTrack();
+
+        for (int i = 0; i < original.size(); i++) {
+            MidiEvent event = original.get(i);
+            MidiMessage message = event.getMessage();
+
+            MidiMessage outMessage;
+            if (message instanceof ShortMessage sm) {
+                outMessage = transposeShortMessage(sm, shift);
+            } else {
+                try {
+                    outMessage = MidiCopyUtils.deepCopyMessage(message);
+                } catch (InvalidMidiDataException e) {
+                    throw new IllegalStateException("Failed to copy MIDI message", e);
                 }
             }
-            sequence.deleteTrack(sequence.getTracks()[trackNum]);
+
+            transposed.add(new MidiEvent(outMessage, event.getTick()));
         }
+
+        sequence.deleteTrack(original);
         return sequence;
     }
 
-    private static ShortMessage transposeNote(MidiEvent midiEvent, int step) throws InvalidMidiDataException {
-        byte[] data = midiEvent.getMessage().getMessage();
-        data[1] += step;
-        ShortMessage sm = new ShortMessage();
-        byte channel = (byte)Character.digit(MidiUtils.toHexByte(midiEvent.getMessage().getMessage()[0]).charAt(1), 16);
-        sm.setMessage(ShortMessage.NOTE_ON, channel, data[1], data[2]);
-        return sm;
+    private static int chooseShift(int minShift, int maxShift) {
+        if (minShift > maxShift) {
+            throw new OutOfRangeException("Unable to transpose notes to fit ocarina range");
+        }
+        if (minShift <= 0 && 0 <= maxShift) {
+            return 0;
+        }
+        return Math.abs(minShift) <= Math.abs(maxShift) ? minShift : maxShift;
+    }
+
+    private static MidiMessage transposeShortMessage(ShortMessage sm, int step) {
+        int cmd = sm.getCommand();
+        int channel = sm.getChannel();
+        int pitch = sm.getData1();
+        int vel = sm.getData2();
+
+        boolean isOn = (cmd == ShortMessage.NOTE_ON) && vel > 0;
+        boolean isOff = (cmd == ShortMessage.NOTE_OFF) || ((cmd == ShortMessage.NOTE_ON) && vel == 0);
+
+        if (!isOn && !isOff) {
+            try {
+                return MidiCopyUtils.deepCopyMessage(sm);
+            } catch (InvalidMidiDataException e) {
+                throw new IllegalStateException("Failed to copy MIDI short message", e);
+            }
+        }
+
+        int newPitch = pitch + step;
+        if (newPitch < 0 || newPitch > 127) {
+            throw new OutOfRangeException("Transposed note out of MIDI range: " + newPitch);
+        }
+
+        try {
+            ShortMessage out = new ShortMessage();
+            int outCmd = isOn ? ShortMessage.NOTE_ON : ShortMessage.NOTE_OFF;
+            int outVel = isOn ? vel : 0;
+            out.setMessage(outCmd, channel, newPitch, outVel);
+            return out;
+        } catch (InvalidMidiDataException e) {
+            throw new IllegalStateException("Failed to transpose MIDI note", e);
+        }
     }
 }

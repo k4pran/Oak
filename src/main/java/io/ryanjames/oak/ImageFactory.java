@@ -110,8 +110,9 @@ public class ImageFactory {
         // FIRST
         spriteSubArr = new ArrayList<>(sprites.subList(0, titleFrameCount));
         sprites.removeAll(spriteSubArr);
+        BufferedImage previewSprite = createNextPreviewSprite(sprites, spriteSubArr.get(0));
         List<BufferedImage> finishedFrames = new ArrayList<>(createForVideo(spriteSubArr, true, false,
-                SpriteRendering.createPreviewSprite(sprites.get(titleFrameCount), videoConfig.getPreviewNoteColor())));
+                previewSprite));
 
         // MIDDLE
         while (sprites.size() > lastFrameCount) {
@@ -262,5 +263,12 @@ public class ImageFactory {
             processed.add(copy);
         }
         return processed;
+    }
+
+    private BufferedImage createNextPreviewSprite(List<BufferedImage> remaining, BufferedImage fallbackSprite) {
+        if (remaining == null || remaining.isEmpty()) {
+            return SpriteRendering.createEmptySprite(fallbackSprite);
+        }
+        return SpriteRendering.createPreviewSprite(remaining.get(0), videoConfig.getPreviewNoteColor());
     }
 }
