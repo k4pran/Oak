@@ -57,7 +57,7 @@ public class ImageFactory {
         int actualFrames = videoImages.size();
 
         if (expectedImages == actualFrames) {
-            List<BufferedImage> outroMessages = ImageScaler.scaleAll(addMessages(spritesCopyForOutro, false), WIDTH, HEIGHT);
+            List<BufferedImage> outroMessages = addMessages(spritesCopyForOutro, false);
 
             List<BufferedImage> combined = new ArrayList<>(introMessages);
             combined.addAll(videoImages);
@@ -159,7 +159,7 @@ public class ImageFactory {
         List<BufferedImage> processed;
 
         if (isTitle) {
-            introMessages = ImageScaler.scaleAll(addMessages(sprites, true), WIDTH, HEIGHT);
+            introMessages = addMessages(sprites, true);
         }
 
         processed = addForegrounds(sprites, isTitle, isLast);
@@ -251,19 +251,21 @@ public class ImageFactory {
         }
         spritesCopy = ImagePadder.padImages(spritesCopy, rows, cols);
         templateImg = ImageStitcher.stitchImages(spritesCopy, rows, cols);
-        templateImg = ImageScaler.scale(templateImg, WIDTH, HEIGHT);
         if (intro) {
             templateImg = ImagePadder.padImageTop(templateImg, templateImg.getHeight() / cols);
-            TextFactory.addTitle(templateImg, CustomText.getTitleText(), rows + 1);
         } else {
             templateImg = ImagePadder.padImageBottom(templateImg, templateImg.getHeight() / cols);
         }
         templateImg = ImageLayering.addBackground(templateImg, background);
+        templateImg = ImageScaler.scale(templateImg, WIDTH, HEIGHT);
 
         List<BufferedImage> processed = new ArrayList<>();
         List<String> messages = intro ? CustomText.getIntroText() : CustomText.getOutroText();
         for (String text : messages) {
             BufferedImage copy = ImageCopier.copyImage(templateImg);
+            if (intro) {
+                TextFactory.addTitle(copy, CustomText.getTitleText(), rows + 1);
+            }
             CustomText.setText(CustomText.getGeneralText(), text);
             TextFactory.addText(copy, CustomText.getGeneralText(), rows + 1);
             processed.add(copy);
