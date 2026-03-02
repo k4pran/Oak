@@ -47,6 +47,9 @@ public class ImageFactory {
         calculateSpriteCounts(sprites);
         int expectedImages = sprites.size() + 2;
 
+        // Save a copy of sprites for outro messages (coordinateVideoCreation mutates the list)
+        List<BufferedImage> spritesCopyForOutro = new ArrayList<>(sprites.subList(0, Math.min(sprites.size(), spritesPerPage)));
+
         progressBar = new ProgressBar("Creating frames", sprites.size());
         progressBar.start();
         List<BufferedImage> videoImages = coordinateVideoCreation(sprites);
@@ -54,8 +57,11 @@ public class ImageFactory {
         int actualFrames = videoImages.size();
 
         if (expectedImages == actualFrames) {
+            List<BufferedImage> outroMessages = ImageScaler.scaleAll(addMessages(spritesCopyForOutro, false), WIDTH, HEIGHT);
+
             List<BufferedImage> combined = new ArrayList<>(introMessages);
             combined.addAll(videoImages);
+            combined.addAll(outroMessages);
 
             return combined;
         } else {

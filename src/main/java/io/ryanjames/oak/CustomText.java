@@ -30,7 +30,10 @@ public class CustomText {
                 ColorConversions.interrogateColor("white").getRGB());
 
         introText = new ArrayList<>();
+        introText.add("Email luncarina@gmail.com for tutorial requests and feedback");
+
         outroText = new ArrayList<>();
+        outroText.add("Thank you for watching! :)");
     }
 
     //================================================================================

@@ -38,4 +38,21 @@ of what I needed to know to accomplish it.
 
 - My first attempt to create the video from frames was to save the files in a temporary folder then have FFMPEG read them in order. The performance was very poor with the method and through a lot of reading and playing around with it I was able to skip that part and pipe them to FFMPEG directly which dramatically improved performance and the output process taught me a lot about muxing, FFMPEG and video processing. 
 
-- I learnt many lessons about image processing, including different image formats, alpha channels, resizing, combining images and editing images as the frames are all processed based on the custom options and midi notes. 
+- I learnt many lessons about image processing, including different image formats, alpha channels, resizing, combining images and editing images as the frames are all processed based on the custom options and midi notes.
+
+## Color Quantizer Tool
+
+Quantize a PNG (or all PNGs in a directory) to a fixed palette while preserving transparency.
+
+Run:
+
+```powershell
+mvn -q -DskipTests package
+java -cp target/classes io.ryanjames.oak.tools.ColorQuantizerCli "path\to\input.png" "path\to\output-dir" "#000000;#FFFFFF;#808080"
+```
+
+Palette formats:
+- Hex: `#RRGGBB` separated by `;`
+- RGB: `r,g,b` separated by `;`
+
+If no palette is provided, the default is black/white/grey.

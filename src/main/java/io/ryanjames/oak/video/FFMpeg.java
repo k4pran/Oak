@@ -37,13 +37,14 @@ public class FFMpeg {
                     // Audio input
                     "-i", audioFile,
 
-                    // Delay audio by 2000ms (2 seconds)
+                    // Delay audio to align with video, pad with silence so video isn't cut short
                     "-filter_complex",
-                    "[1:a]adelay=" + 2000 + "|" + 2000
-                            + ",volume=0.9,aresample=48000:resampler=soxr:dither_method=triangular[aud]",
+                    "[1:a]adelay=" + (int)(offset * 1000) + "|" + (int)(offset * 1000)
+                            + ",volume=0.9,aresample=48000:resampler=soxr:dither_method=triangular,apad[aud]",
 
                     "-map", "0:v",
                     "-map", "[aud]",
+                    "-shortest",
 
                     "-c:v", "libx264",
                     "-pix_fmt", "yuv420p",
