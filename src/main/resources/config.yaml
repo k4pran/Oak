@@ -15,5 +15,5 @@ videoConfig:
   audioFromMidi: true
 
 textConfig:
-  title: "The Blue Prince"
+  title: ""
   titleColor: "#0000FF"

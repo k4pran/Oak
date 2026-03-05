@@ -28,7 +28,8 @@ public class Transposer implements SequenceTransformer {
      * Validates a midi sequence's range and transposes to fit if necessary.
      * It will alter the range based on the type of ocarina and the preferred key. E.g. C is preferred for a C soprano
      * ocarina. It will take three preferred keys in order and try to fit them, if this fails, it will align the
-     * lowest note with the lowest on the ocarinas range. If it still doesn't fit it will throw an exception.
+     * lowest note with the lowest on the ocarinas range. If the melody span exceeds the ocarina range,
+     * notes outside the range will be octave-folded to fit.
      * @param sequence
      * @return
      */
@@ -44,23 +45,30 @@ public class Transposer implements SequenceTransformer {
 
         int span = highestNote - lowestNote;
         int range = higherOcRange - lowerOcRange;
-        if (span > range) {
-            throw new OutOfRangeException("Unable to transpose notes to fit ocarina range: " +
-                    "\tOcarina: " + ocarina +
-                    "\tLowest note in sequence: " + lowestNote +
-                    "\tHighest note in sequence: " + highestNote +
-                    "\tOcarina range: " + lowerOcRange + " - " + higherOcRange);
+        boolean needsOctaveFolding = span > range;
+
+        int shift;
+        if (needsOctaveFolding) {
+            // Melody is wider than the ocarina range — choose a shift that centres
+            // the melody as well as possible, then octave-fold outliers.
+            int centreOfMelody = (lowestNote + highestNote) / 2;
+            int centreOfRange = (lowerOcRange + higherOcRange) / 2;
+            shift = centreOfRange - centreOfMelody;
+            LOG.warn("Melody span ({} semitones) exceeds ocarina range ({} semitones). " +
+                            "Notes outside the range will be octave-folded.",
+                    span, range);
+        } else {
+            int minShift = lowerOcRange - lowestNote;
+            int maxShift = higherOcRange - highestNote;
+            shift = chooseShift(minShift, maxShift);
         }
 
-        int minShift = lowerOcRange - lowestNote;
-        int maxShift = higherOcRange - highestNote;
-        int shift = chooseShift(minShift, maxShift);
-        if (shift == 0) {
+        if (shift == 0 && !needsOctaveFolding) {
             return sequence;
         }
 
         String newRange = MidiUtils.formatNoteName(lowestNote + shift) + "-" + MidiUtils.formatNoteName(highestNote + shift);
-        String direction = shift > 0 ? "raised" : "lowered";
+        String direction = shift > 0 ? "raised" : shift < 0 ? "lowered" : "unchanged";
 
         MidiKeyGuesser.KeyGuess keyGuess = MidiKeyGuesser.detectKey(sequence, trackNum, 0);
         MidiKeyGuesser.KeyGuess newKeyGuess = MidiKeyGuesser.transpose(keyGuess, shift);
@@ -92,7 +100,7 @@ public class Transposer implements SequenceTransformer {
 
             MidiMessage outMessage;
             if (message instanceof ShortMessage sm) {
-                outMessage = transposeShortMessage(sm, shift);
+                outMessage = transposeShortMessage(sm, shift, lowerOcRange, higherOcRange, needsOctaveFolding);
             } else {
                 try {
                     outMessage = MidiCopyUtils.deepCopyMessage(message);
@@ -118,7 +126,9 @@ public class Transposer implements SequenceTransformer {
         return Math.abs(minShift) <= Math.abs(maxShift) ? minShift : maxShift;
     }
 
-    private static MidiMessage transposeShortMessage(ShortMessage sm, int step) {
+    private static MidiMessage transposeShortMessage(ShortMessage sm, int step,
+                                                      int lowerBound, int upperBound,
+                                                      boolean octaveFold) {
         int cmd = sm.getCommand();
         int channel = sm.getChannel();
         int pitch = sm.getData1();
@@ -136,6 +146,16 @@ public class Transposer implements SequenceTransformer {
         }
 
         int newPitch = pitch + step;
+
+        if (octaveFold) {
+            while (newPitch < lowerBound) {
+                newPitch += 12;
+            }
+            while (newPitch > upperBound) {
+                newPitch -= 12;
+            }
+        }
+
         if (newPitch < 0 || newPitch > 127) {
             throw new OutOfRangeException("Transposed note out of MIDI range: " + newPitch);
         }

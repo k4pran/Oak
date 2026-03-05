@@ -49,6 +49,8 @@ public class DocumentGeneratorCoordinator {
         documentOutputPipeline.run(imageFrames, run.outputDir().toString(), globalConfig.textConfig().getTitle());
 
         cleanUp();
+
+        LOG.info("Artifacts output to {}", run.outputDir().toAbsolutePath());
     }
 
     private static void cleanUp() {

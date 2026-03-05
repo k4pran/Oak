@@ -47,8 +47,8 @@ public class ImageFactory {
         calculateSpriteCounts(sprites);
         int expectedImages = sprites.size() + 2;
 
-        // Save a copy of sprites for outro messages (coordinateVideoCreation mutates the list)
-        List<BufferedImage> spritesCopyForOutro = new ArrayList<>(sprites.subList(0, Math.min(sprites.size(), spritesPerPage)));
+        // Save a copy of the last frame's sprites for outro messages (coordinateVideoCreation mutates the list)
+        List<BufferedImage> spritesCopyForOutro = new ArrayList<>(sprites.subList(sprites.size() - lastFrameCount, sprites.size()));
 
         progressBar = new ProgressBar("Creating frames", sprites.size());
         progressBar.start();
@@ -57,7 +57,7 @@ public class ImageFactory {
         int actualFrames = videoImages.size();
 
         if (expectedImages == actualFrames) {
-            List<BufferedImage> outroMessages = addMessages(spritesCopyForOutro, false);
+            List<BufferedImage> outroMessages = addMessages(spritesCopyForOutro, false, false);
 
             List<BufferedImage> combined = new ArrayList<>(introMessages);
             combined.addAll(videoImages);
@@ -73,7 +73,10 @@ public class ImageFactory {
         calculateSpriteCounts(sprites);
 
         Log.info("Creating document frames");
-        return coordinatePdfCreation(sprites);
+        List<BufferedImage> frames = coordinatePdfCreation(sprites);
+
+
+        return frames;
     }
 
         private void calculateSpriteCounts(List<BufferedImage> sprites) {
@@ -142,12 +145,20 @@ public class ImageFactory {
         BufferedImage img;
 
         if (isTitle) {
-            introMessages = addMessages(sprites, true);
+            introMessages = addMessages(sprites, true, true);
         }
         img = addForeGround(sprites, isTitle, isLast);
         img = addBackground(img);
-        img = addTextToImage(img, isTitle);
         img = ImageScaler.scale(img, WIDTH, HEIGHT);
+        img = addTextToImage(img, isTitle);
+
+        if (isLast) {
+            List<String> outroMessages = CustomText.getPdfOutroText();
+            for (String text : outroMessages) {
+                CustomText.setText(CustomText.getGeneralText(), text);
+                TextFactory.addText(img, CustomText.getGeneralText(), rows + 1);
+            }
+        }
 
         return img;
     }
@@ -159,7 +170,7 @@ public class ImageFactory {
         List<BufferedImage> processed;
 
         if (isTitle) {
-            introMessages = addMessages(sprites, true);
+            introMessages = addMessages(sprites, true, false);
         }
 
         processed = addForegrounds(sprites, isTitle, isLast);
@@ -236,7 +247,7 @@ public class ImageFactory {
         return images;
     }
 
-    private List<BufferedImage> addMessages(List<BufferedImage> sprites, boolean intro) {
+    private List<BufferedImage> addMessages(List<BufferedImage> sprites, boolean intro, boolean forPdf) {
 
         BufferedImage templateImg;
         List<BufferedImage> spritesCopy = new ArrayList<>();
@@ -260,7 +271,12 @@ public class ImageFactory {
         templateImg = ImageScaler.scale(templateImg, WIDTH, HEIGHT);
 
         List<BufferedImage> processed = new ArrayList<>();
-        List<String> messages = intro ? CustomText.getIntroText() : CustomText.getOutroText();
+        List<String> messages;
+        if (forPdf) {
+            messages = intro ? CustomText.getPdfIntroText() : CustomText.getPdfOutroText();
+        } else {
+            messages = intro ? CustomText.getVideoIntroText() : CustomText.getVideoOutroText();
+        }
         for (String text : messages) {
             BufferedImage copy = ImageCopier.copyImage(templateImg);
             if (intro) {

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class TextConfig {
 
@@ -20,6 +21,11 @@ public class TextConfig {
 
     private CommandLine cmd;
     private String title;
+    private CustomText titleText;
+    private CustomText previewText;
+    private CustomText generalText;
+    private List<String> introText;
+    private List<String> outroText;
 
     @JsonDeserialize(using = ColorDeserializer.class)
     private Color titleColor;
@@ -52,12 +58,14 @@ public class TextConfig {
 
         if(cmd.hasOption("intro")) {
             ArrayList<String> introList = new ArrayList<>(Arrays.asList(cmd.getOptionValues("intro")));
-            CustomText.setIntroText(introList);
+            CustomText.setVideoIntroText(introList);
+            CustomText.setPdfIntroText(new ArrayList<>(introList));
         }
 
         if(cmd.hasOption("outro")) {
             ArrayList<String> outroList = new ArrayList<>(Arrays.asList(cmd.getOptionValues("outro")));
-            CustomText.setOutroText(outroList);
+            CustomText.setVideoOutroText(outroList);
+            CustomText.setPdfOutroText(new ArrayList<>(outroList));
         }
     }
 

@@ -73,13 +73,39 @@ public class ColorConversions {
     }
 
     /**
-     * Attempts to figure out a color from different forms of input such as name or rgb values.
+     * Parses a hex color string such as "#FF5733", "0xFF5733", or "FF5733".
+     * @param hex
+     * @return
+     * @throws ColorConversionException
+     */
+    public static Color parseHex(String hex) throws ColorConversionException {
+        String cleaned = hex.strip();
+        if (cleaned.startsWith("#")) {
+            cleaned = cleaned.substring(1);
+        } else if (cleaned.toLowerCase().startsWith("0x")) {
+            cleaned = cleaned.substring(2);
+        }
+        if (cleaned.length() != 6) {
+            throw new ColorConversionException("Hex color must be 6 hex digits, got: '" + hex + "'");
+        }
+        try {
+            int rgb = Integer.parseInt(cleaned, 16);
+            return new Color(rgb);
+        } catch (NumberFormatException e) {
+            throw new ColorConversionException("Invalid hex color: '" + hex + "'");
+        }
+    }
+
+    /**
+     * Attempts to figure out a color from different forms of input such as name, hex, or rgb values.
      * @param inputColour
      * @return
      * @throws ColorConversionException
      */
     public static Color interrogateColor(String inputColour) throws ColorConversionException {
         Color color = null;
+
+        // Try color name (e.g. "blue", "BLACK", "GREEN")
         try {
             color = getColorByName(inputColour);
         }
@@ -88,20 +114,30 @@ public class ColorConversions {
         if(color != null) {
             return color;
         }
-        else {
-            String[] rgb = inputColour.split(" ");
-            if(rgb.length == 3) {
-                // Check if hex values being input and convert.
-                try {
-                    int[] rgbAsInt = new int[rgb.length];
-                    for(int i = 0; i < rgb.length; i++) {
-                        rgbAsInt[i] = Integer.parseInt(rgb[i], 10);
-                    }
-                    return mergeRGB(rgbAsInt);
-                }
-                catch(NumberFormatException e) {}
-            }
+
+        // Try hex (e.g. "#FF5733", "0xFF5733", "FF5733")
+        try {
+            color = parseHex(inputColour);
         }
+        catch (ColorConversionException e) {}
+
+        if(color != null) {
+            return color;
+        }
+
+        // Try space-separated RGB decimal values (e.g. "255 87 51")
+        String[] rgb = inputColour.split(" ");
+        if(rgb.length == 3) {
+            try {
+                int[] rgbAsInt = new int[rgb.length];
+                for(int i = 0; i < rgb.length; i++) {
+                    rgbAsInt[i] = Integer.parseInt(rgb[i], 10);
+                }
+                return mergeRGB(rgbAsInt);
+            }
+            catch(NumberFormatException e) {}
+        }
+
         throw new ColorConversionException("Unable to find a valid color from input: " + inputColour);
     }
 }

@@ -60,6 +60,8 @@ public class VideoGeneratorCoordinator {
         videoOutputPipeline.run(imagePipelineResult.videoFrames(), imagePipelineResult.frameDurationsMs(), audioFile, run.outputDir().toString());
 
         cleanUp(audioFile);
+
+        LOG.info("Artifacts output to {}", run.outputDir().toAbsolutePath());
     }
 
     private static void cleanUp(File audioFile) {

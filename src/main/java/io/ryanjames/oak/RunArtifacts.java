@@ -22,12 +22,6 @@ public final class RunArtifacts {
     private final Path inputDir;
     private final Path outputDir;
 
-    private RunArtifacts(Path baseDir, Path inputDir, Path outputDir) {
-        this.baseDir = baseDir;
-        this.inputDir = inputDir;
-        this.outputDir = outputDir;
-    }
-
     public static RunArtifacts fromTitle(String title, String baseOutputDir) {
         String safeTitle = sanitizeTitle(title);
         Path root = Path.of(baseOutputDir).resolve(safeTitle);
@@ -42,6 +36,12 @@ public final class RunArtifacts {
         }
 
         return new RunArtifacts(root, inputs, outputs);
+    }
+
+    private RunArtifacts(Path baseDir, Path inputDir, Path outputDir) {
+        this.baseDir = baseDir;
+        this.inputDir = inputDir;
+        this.outputDir = outputDir;
     }
 
     public Path outputDir() {

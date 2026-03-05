@@ -14,8 +14,10 @@ public class CustomText {
     private static CustomText titleText;
     private static CustomText previewText;
     private static CustomText generalText;
-    private static ArrayList<String> introText;
-    private static ArrayList<String> outroText;
+    private static ArrayList<String> videoIntroText;
+    private static ArrayList<String> videoOutroText;
+    private static ArrayList<String> pdfIntroText;
+    private static ArrayList<String> pdfOutroText;
 
     public static void createTitleFont(String title, Color titleColor) {
          titleText = new CustomText(title, new Font("Baghdad", Font.BOLD, 58),
@@ -29,11 +31,17 @@ public class CustomText {
         generalText = new CustomText("", new Font("Baghdad", Font.BOLD, 24),
                 ColorConversions.interrogateColor("white").getRGB());
 
-        introText = new ArrayList<>();
-        introText.add("Email luncarina@gmail.com for tutorial requests and feedback");
+        videoIntroText = new ArrayList<>();
+        videoIntroText.add("Email luncarina@gmail.com for tutorial requests and feedback");
 
-        outroText = new ArrayList<>();
-        outroText.add("Thank you for watching! :)");
+        videoOutroText = new ArrayList<>();
+        videoOutroText.add("Thank you for watching! :)");
+
+        pdfIntroText = new ArrayList<>();
+        pdfIntroText.add("");
+
+        pdfOutroText = new ArrayList<>();
+        pdfOutroText.add("Email luncarina@gmail.com for tutorial requests and feedback");
     }
 
     //================================================================================
@@ -93,20 +101,36 @@ public class CustomText {
         customText.text = text;
     }
 
-    public static ArrayList<String> getIntroText() {
-        return introText;
+    public static ArrayList<String> getVideoIntroText() {
+        return videoIntroText;
     }
 
-    public static void setIntroText(ArrayList<String> introText) {
-        CustomText.introText = introText;
+    public static void setVideoIntroText(ArrayList<String> videoIntroText) {
+        CustomText.videoIntroText = videoIntroText;
     }
 
-    public static ArrayList<String> getOutroText() {
-        return outroText;
+    public static ArrayList<String> getVideoOutroText() {
+        return videoOutroText;
     }
 
-    public static void setOutroText(ArrayList<String> outroText) {
-        CustomText.outroText = outroText;
+    public static void setVideoOutroText(ArrayList<String> videoOutroText) {
+        CustomText.videoOutroText = videoOutroText;
+    }
+
+    public static ArrayList<String> getPdfIntroText() {
+        return pdfIntroText;
+    }
+
+    public static void setPdfIntroText(ArrayList<String> pdfIntroText) {
+        CustomText.pdfIntroText = pdfIntroText;
+    }
+
+    public static ArrayList<String> getPdfOutroText() {
+        return pdfOutroText;
+    }
+
+    public static void setPdfOutroText(ArrayList<String> pdfOutroText) {
+        CustomText.pdfOutroText = pdfOutroText;
     }
 
     public Font getFont() {

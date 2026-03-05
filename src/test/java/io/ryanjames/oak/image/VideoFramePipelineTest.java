@@ -105,10 +105,10 @@ class VideoFramePipelineTest {
 
     @Test
     void getFrameDurations_includesIntroAndOutroCounts() throws Exception {
-        ArrayList<String> originalIntro = new ArrayList<>(CustomText.getIntroText());
-        ArrayList<String> originalOutro = new ArrayList<>(CustomText.getOutroText());
-        CustomText.setIntroText(new ArrayList<>(List.of("one", "two")));
-        CustomText.setOutroText(new ArrayList<>(List.of("out")));
+            ArrayList<String> originalIntro = new ArrayList<>(CustomText.getVideoIntroText());
+        ArrayList<String> originalOutro = new ArrayList<>(CustomText.getVideoOutroText());
+        CustomText.setVideoIntroText(new ArrayList<>(List.of("one", "two")));
+        CustomText.setVideoOutroText(new ArrayList<>(List.of("out")));
 
         try {
             ArrayList<MidiNote> onNotes = new ArrayList<>();
@@ -134,8 +134,8 @@ class VideoFramePipelineTest {
             assertEquals(1000.0, durations.get(1));
             assertEquals(1000.0, durations.get(2));
         } finally {
-            CustomText.setIntroText(originalIntro);
-            CustomText.setOutroText(originalOutro);
+            CustomText.setVideoIntroText(originalIntro);
+            CustomText.setVideoOutroText(originalOutro);
         }
     }
 

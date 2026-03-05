@@ -173,6 +173,14 @@
             <artifactId>imageio-webp</artifactId>
             <version>3.11.0</version>
         </dependency>
+
+        <!-- Source: https://mvnrepository.com/artifact/de.sciss/abc4j -->
+        <dependency>
+            <groupId>de.sciss</groupId>
+            <artifactId>abc4j</artifactId>
+            <version>0.6.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

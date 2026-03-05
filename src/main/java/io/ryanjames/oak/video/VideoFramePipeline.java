@@ -62,7 +62,7 @@ public class VideoFramePipeline {
 
     protected List<Double> getFrameDurations(MidiFile midiFile, List<MidiNote> midiNotes, List<MidiNote> offNotes) {
         // Intro frame durations
-        List<Double> frameDurations = new ArrayList<>(Collections.nCopies(CustomText.getIntroText().size(),
+        List<Double> frameDurations = new ArrayList<>(Collections.nCopies(CustomText.getVideoIntroText().size(),
                 SECOND_AS_MS * midiFile.getTicksInMs()));
 
         // Played note frame durations
@@ -71,7 +71,7 @@ public class VideoFramePipeline {
         frameDurations.addAll(durations);
 
         // Outro frame durations
-        frameDurations.addAll(Collections.nCopies(CustomText.getOutroText().size(),
+        frameDurations.addAll(Collections.nCopies(CustomText.getVideoOutroText().size(),
                 SECOND_AS_MS * midiFile.getTicksInMs()));
         return frameDurations;
     }
