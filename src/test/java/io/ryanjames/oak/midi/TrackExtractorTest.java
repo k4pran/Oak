@@ -15,14 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TrackExtractorTest {
 
     @Test
-    void guessMelodyChannel_prefersChannelZeroWhenPresent() throws Exception {
+    void guessMelodyChannel_selectsHighestTopNoteAtTick() throws Exception {
         Sequence sequence = new Sequence(Sequence.PPQ, 480);
         Track track = sequence.createTrack();
 
         addNoteOn(track, 0, 60, 64, 0);
         addNoteOn(track, 1, 72, 64, 0);
 
-        assertEquals(0, TrackExtractor.guessMelodyChannel(track));
+        assertEquals(1, TrackExtractor.guessMelodyChannel(track));
     }
 
     @Test

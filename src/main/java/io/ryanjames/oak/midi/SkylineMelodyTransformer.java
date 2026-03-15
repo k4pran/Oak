@@ -34,12 +34,12 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
             // Skyline-select note segments
             List<NoteSegment> segments = skylineSegments(notes);
 
-            // Emit segments as NOTE_ON/NOTE_OFF pairs on channel 0
+            // Emit segments as NOTE_ON/NOTE_OFF pairs on the selected melody channel
             for (NoteSegment seg : segments) {
                 if (seg.endTick <= seg.startTick) continue;
 
-                outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(noteOn(0, seg.pitch, seg.velocity)), seg.startTick));
-                outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(noteOff(0, seg.pitch, 0)), seg.endTick));
+                outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(noteOn(seg.channel, seg.pitch, seg.velocity)), seg.startTick));
+                outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(noteOff(seg.channel, seg.pitch, 0)), seg.endTick));
             }
 
             // Ensure End-of-Track meta exists at end (use the util)
@@ -57,12 +57,14 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
     private static final class Note {
         final long startTick;
         final long endTick;
+        final int channel;   // 0..15
         final int pitch;     // 0..127
         final int velocity;  // 1..127 (for NOTE_ON)
 
-        Note(long startTick, long endTick, int pitch, int velocity) {
+        Note(long startTick, long endTick, int channel, int pitch, int velocity) {
             this.startTick = startTick;
             this.endTick = endTick;
+            this.channel = channel;
             this.pitch = pitch;
             this.velocity = velocity;
         }
@@ -74,12 +76,14 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
     private static final class NoteSegment {
         final long startTick;
         final long endTick;
+        final int channel;
         final int pitch;
         final int velocity;
 
-        NoteSegment(long startTick, long endTick, int pitch, int velocity) {
+        NoteSegment(long startTick, long endTick, int channel, int pitch, int velocity) {
             this.startTick = startTick;
             this.endTick = endTick;
+            this.channel = channel;
             this.pitch = pitch;
             this.velocity = velocity;
         }
@@ -142,7 +146,7 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
                     if (start != null) {
                         long endTick = ev.getTick();
                         if (endTick > start.startTick) {
-                            out.add(new Note(start.startTick, endTick, pitch, start.velocity));
+                            out.add(new Note(start.startTick, endTick, ch, pitch, start.velocity));
                         }
                     }
                 }
@@ -176,21 +180,19 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
         boundaries.sort(Comparator.<Boundary>comparingLong(Boundary::tick)
                 .thenComparing(b -> b.isStart ? 1 : 0));
 
-        // Active notes keyed by pitch -> multiset of velocities (so we can pick max velocity for that pitch)
-        TreeMap<Integer, PriorityQueue<Integer>> active = new TreeMap<>();
+        List<Note> active = new ArrayList<>();
         List<NoteSegment> segments = new ArrayList<>();
 
         long prevTick = boundaries.get(0).tick();
-        Integer currentPitch = null;
-        Integer currentVel = null;
+        Note current = null;
 
         int idx = 0;
         while (idx < boundaries.size()) {
             long tick = boundaries.get(idx).tick();
 
             // Emit segment for [prevTick, tick) using current selection
-            if (currentPitch != null && tick > prevTick) {
-                segments.add(new NoteSegment(prevTick, tick, currentPitch, currentVel != null ? currentVel : 64));
+            if (current != null && tick > prevTick) {
+                segments.add(new NoteSegment(prevTick, tick, current.channel, current.pitch, current.velocity));
             }
 
             // Apply all boundaries at this tick
@@ -199,27 +201,24 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
                 Note n = b.note();
 
                 if (b.isStart()) {
-                    active.computeIfAbsent(n.pitch, p -> new PriorityQueue<>(Comparator.reverseOrder()))
-                            .add(n.velocity);
+                    active.add(n);
                 } else {
-                    PriorityQueue<Integer> pq = active.get(n.pitch);
-                    if (pq != null) {
-                        // remove one occurrence of this velocity if present; otherwise just pop one
-                        if (!pq.remove(n.velocity) && !pq.isEmpty()) pq.poll();
-                        if (pq.isEmpty()) active.remove(n.pitch);
-                    }
+                    active.remove(n);
                 }
                 idx++;
             }
 
-            // Choose new skyline note: highest pitch among active
+            // Choose new skyline note: highest pitch among active notes.
+            // Tie-break by velocity, then lower channel for deterministic output.
             if (active.isEmpty()) {
-                currentPitch = null;
-                currentVel = null;
+                current = null;
             } else {
-                Map.Entry<Integer, PriorityQueue<Integer>> top = active.lastEntry();
-                currentPitch = top.getKey();
-                currentVel = top.getValue().peek(); // max velocity for that pitch
+                current = active.stream()
+                        .max(Comparator
+                                .comparingInt((Note n) -> n.pitch)
+                                .thenComparingInt(n -> n.velocity)
+                                .thenComparingInt(n -> -n.channel))
+                        .orElse(null);
             }
 
             prevTick = tick;
@@ -237,10 +236,10 @@ public class SkylineMelodyTransformer implements SequenceTransformer {
 
         for (int i = 1; i < segs.size(); i++) {
             NoteSegment nxt = segs.get(i);
-            if (cur.pitch == nxt.pitch && cur.endTick == nxt.startTick) {
+            if (cur.channel == nxt.channel && cur.pitch == nxt.pitch && cur.endTick == nxt.startTick) {
                 // keep higher velocity (or keep current)
                 int vel = Math.max(cur.velocity, nxt.velocity);
-                cur = new NoteSegment(cur.startTick, nxt.endTick, cur.pitch, vel);
+                cur = new NoteSegment(cur.startTick, nxt.endTick, cur.channel, cur.pitch, vel);
             } else {
                 merged.add(cur);
                 cur = nxt;

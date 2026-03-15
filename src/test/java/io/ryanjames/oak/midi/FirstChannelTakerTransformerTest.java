@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FirstChannelTakerTransformerTest {
 
     @Test
-    void transform_keepsOnlyChannelZeroShortMessagesAndMeta() throws Exception {
+    void transform_keepsOnlyFirstNoteOnChannelShortMessagesAndMeta() throws Exception {
         Sequence input = new Sequence(Sequence.PPQ, 480);
         Track track = input.createTrack();
 
@@ -28,9 +28,12 @@ class FirstChannelTakerTransformerTest {
         meta.setMessage(0x03, "name".getBytes(), "name".length());
         track.add(new MidiEvent(meta, 0));
 
-        track.add(new MidiEvent(shortMessage(ShortMessage.NOTE_ON, 1, 60, 64), 0));
-        track.add(new MidiEvent(shortMessage(ShortMessage.NOTE_ON, 0, 61, 64), 5));
-        track.add(new MidiEvent(shortMessage(ShortMessage.NOTE_OFF, 1, 60, 0), 10));
+        // First channel message is not NOTE_ON; channel 1 should still be chosen
+        // because the first NOTE_ON uses channel 1.
+        track.add(new MidiEvent(shortMessage(ShortMessage.PROGRAM_CHANGE, 2, 5, 0), 0));
+        track.add(new MidiEvent(shortMessage(ShortMessage.NOTE_ON, 1, 60, 64), 5));
+        track.add(new MidiEvent(shortMessage(ShortMessage.NOTE_ON, 0, 61, 64), 10));
+        track.add(new MidiEvent(shortMessage(ShortMessage.NOTE_OFF, 1, 60, 0), 15));
 
         FirstChannelTakerTransformer transformer = new FirstChannelTakerTransformer();
         Sequence output = transformer.transform(input);
@@ -60,18 +63,22 @@ class FirstChannelTakerTransformerTest {
 
         assertTrue(hasMetaName);
         assertTrue(hasEot);
-        assertEquals(1, shortMessages.size());
-        assertEquals(0, shortMessages.get(0).getChannel());
+        assertEquals(2, shortMessages.size());
+        assertEquals(1, shortMessages.get(0).getChannel());
+        assertEquals(1, shortMessages.get(1).getChannel());
     }
 
     @Test
-    void transform_copiesMetaOnlyTracks() throws Exception {
+    void transform_keepsOnlyMetaWhenNoNoteOnExists() throws Exception {
         Sequence input = new Sequence(Sequence.PPQ, 480);
         Track track = input.createTrack();
 
         MetaMessage meta = new MetaMessage();
         meta.setMessage(0x03, "title".getBytes(), "title".length());
         track.add(new MidiEvent(meta, 0));
+
+        track.add(new MidiEvent(shortMessage(ShortMessage.CONTROL_CHANGE, 7, 7, 100), 0));
+        track.add(new MidiEvent(shortMessage(ShortMessage.PROGRAM_CHANGE, 7, 9, 0), 5));
 
         FirstChannelTakerTransformer transformer = new FirstChannelTakerTransformer();
         Sequence output = transformer.transform(input);

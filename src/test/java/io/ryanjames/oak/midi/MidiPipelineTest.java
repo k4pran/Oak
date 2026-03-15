@@ -24,10 +24,10 @@ class MidiPipelineTest {
         Sequence sequence = new Sequence(Sequence.PPQ, 480);
         Track track = sequence.createTrack();
 
-        addNoteOn(track, 0, 72, 64, 0);
-        addNoteOff(track, 0, 72, 64, 240);
-        addNoteOn(track, 0, 76, 64, 480);
-        addNoteOff(track, 0, 76, 64, 720);
+        addNoteOn(track, 2, 72, 64, 0);
+        addNoteOff(track, 2, 72, 64, 240);
+        addNoteOn(track, 2, 76, 64, 480);
+        addNoteOff(track, 2, 76, 64, 720);
 
         MidiFile midiFile = buildMidiFile(sequence);
         File midiPath = new File("test.mid");
@@ -46,8 +46,13 @@ class MidiPipelineTest {
                 transformed = new FirstChannelTakerTransformer().transform(transformed);
                 transformed = new SkylineMelodyTransformer().transform(transformed);
 
-                NoteRangeExtractor.NoteRange noteRange = new NoteRangeExtractor(0).extract(transformed);
-                new Transposer(0, noteRange.lowest(), noteRange.highest(), Ocarinas.C_SOPRANO)
+                MidiNoteExtractor.Result inputNoteInfo = MidiNoteExtractor.extractFirstTrackWithNotes(transformed);
+                new Transposer(
+                        inputNoteInfo.trackIndex(),
+                        inputNoteInfo.lowestNote(),
+                        inputNoteInfo.highestNote(),
+                        Ocarinas.C_SOPRANO
+                )
                         .transform(transformed);
 
                 MidiNoteExtractor.Result noteInfo = MidiNoteExtractor.extractFirstTrackWithNotes(transformed);
@@ -59,7 +64,7 @@ class MidiPipelineTest {
 
         assertSame(midiFile, result.midiFile());
         assertNotNull(result.noteInfo());
-        assertEquals(0, result.noteInfo().channel());
+        assertEquals(2, result.noteInfo().channel());
         assertEquals(0, result.noteInfo().trackIndex());
         assertEquals(72, result.noteInfo().lowestNote());
         assertEquals(76, result.noteInfo().highestNote());

@@ -84,8 +84,8 @@ class SkylineMelodyTransformerTest {
         Sequence sequence = new Sequence(Sequence.PPQ, 480);
         Track track = sequence.createTrack();
 
-        addNoteOn(track, 0, 65, 90, 0);
-        addNoteOn(track, 0, 65, 0, 240);
+        addNoteOn(track, 3, 65, 90, 0);
+        addNoteOn(track, 3, 65, 0, 240);
 
         SkylineMelodyTransformer transformer = new SkylineMelodyTransformer();
         Sequence output = transformer.transform(sequence);
@@ -93,8 +93,8 @@ class SkylineMelodyTransformerTest {
         List<MidiEvent> shortEvents = shortMessageEvents(output.getTracks()[0]);
 
         assertEquals(2, shortEvents.size());
-        assertShort(shortEvents.get(0), ShortMessage.NOTE_ON, 0, 65, 90, 0);
-        assertShort(shortEvents.get(1), ShortMessage.NOTE_OFF, 0, 65, 0, 240);
+        assertShort(shortEvents.get(0), ShortMessage.NOTE_ON, 3, 65, 90, 0);
+        assertShort(shortEvents.get(1), ShortMessage.NOTE_OFF, 3, 65, 0, 240);
     }
 
     @Test

@@ -29,7 +29,7 @@ public class NoteToImage {
             }
         }
 
-        if(ocarinaSprites.size() == 0) {
+        if(ocarinaSprites.isEmpty()) {
             throw new NoteProcessingException("Unable to map notes to ocarina sprites");
         }
 

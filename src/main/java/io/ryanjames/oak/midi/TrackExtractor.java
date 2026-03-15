@@ -7,10 +7,6 @@ import javax.sound.midi.Track;
 public class TrackExtractor {
 
     public static int guessMelodyChannel(Track track) {
-        // same as your logic, but static + local
-        int channel0Notes = countNoteOns(track, 0);
-        if (channel0Notes > 0) return 0;
-
         java.util.Map<Long, java.util.Map<Integer, Integer>> tickToChannelTop = new java.util.HashMap<>();
         for (int i = 0; i < track.size(); i++) {
             MidiMessage msg = track.get(i).getMessage();
@@ -39,22 +35,15 @@ public class TrackExtractor {
             if (bestCh >= 0) wins[bestCh]++;
         }
 
-        int bestCh = 0, bestWins = wins[0];
-        for (int ch = 1; ch < 16; ch++) {
-            if (wins[ch] > bestWins) { bestWins = wins[ch]; bestCh = ch; }
+        int bestCh = -1;
+        int bestWins = -1;
+        for (int ch = 0; ch < 16; ch++) {
+            if (wins[ch] > bestWins) {
+                bestWins = wins[ch];
+                bestCh = ch;
+            }
         }
-        return bestWins == 0 ? 0 : bestCh;
-    }
-
-    private static int countNoteOns(Track track, int channel) {
-        int count = 0;
-        for (int i = 0; i < track.size(); i++) {
-            MidiMessage msg = track.get(i).getMessage();
-            if (!(msg instanceof ShortMessage sm)) continue;
-            if (sm.getChannel() != channel) continue;
-            if (sm.getCommand() == ShortMessage.NOTE_ON && sm.getData2() > 0) count++;
-        }
-        return count;
+        return bestWins <= 0 ? 0 : bestCh;
     }
 
 }

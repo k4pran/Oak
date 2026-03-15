@@ -62,7 +62,11 @@ public class Transposer implements SequenceTransformer {
         String newRange = MidiUtils.formatNoteName(lowestNote + shift) + "-" + MidiUtils.formatNoteName(highestNote + shift);
         String direction = shift > 0 ? "raised" : "lowered";
 
-        MidiKeyGuesser.KeyGuess keyGuess = MidiKeyGuesser.detectKey(sequence, trackNum, 0);
+        Integer melodyChannel = null;
+        if (trackNum >= 0 && trackNum < sequence.getTracks().length) {
+            melodyChannel = TrackExtractor.guessMelodyChannel(sequence.getTracks()[trackNum]);
+        }
+        MidiKeyGuesser.KeyGuess keyGuess = MidiKeyGuesser.detectKey(sequence, trackNum, melodyChannel);
         MidiKeyGuesser.KeyGuess newKeyGuess = MidiKeyGuesser.transpose(keyGuess, shift);
 
         if (keyGuess != null && newKeyGuess != null) {

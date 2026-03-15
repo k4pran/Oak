@@ -4,10 +4,9 @@ import javax.sound.midi.*;
 import java.util.Objects;
 
 /**
- * For each track: detect the first MIDI channel used by any ShortMessage,
+ * For each track: detect the first MIDI channel that contains a NOTE_ON,
  * then copy only events on that channel (plus all Meta/SysEx) into a new sequence.
- *
- * If a track has no ShortMessages at all, it is copied as-is (Meta/SysEx only).
+ * If a track has no NOTE_ON events, only non-channel messages are copied.
  */
 public final class FirstChannelTakerTransformer implements SequenceTransformer {
 
@@ -25,15 +24,15 @@ public final class FirstChannelTakerTransformer implements SequenceTransformer {
                 Track inTrack = inTracks[ti];
                 Track outTrack = outTracks[ti];
 
-                Integer channelToKeep = 0;
+                Integer channelToKeep = findFirstNoteOnChannel(inTrack);
 
                 for (int i = 0; i < inTrack.size(); i++) {
                     MidiEvent ev = inTrack.get(i);
                     MidiMessage msg = ev.getMessage();
 
                     if (msg instanceof ShortMessage sm) {
-                        // Keep only chosen channel (if any)
-                        if (sm.getChannel() == channelToKeep) {
+                        // Keep channel messages only when they match the chosen NOTE_ON channel.
+                        if (channelToKeep != null && sm.getChannel() == channelToKeep) {
                             outTrack.add(new MidiEvent(MidiCopyUtils.deepCopyMessage(msg), ev.getTick()));
                         }
                     } else {
@@ -50,5 +49,17 @@ public final class FirstChannelTakerTransformer implements SequenceTransformer {
         } catch (InvalidMidiDataException e) {
             throw new IllegalStateException("Failed to construct transformed sequence", e);
         }
+    }
+
+    private static Integer findFirstNoteOnChannel(Track inTrack) {
+        for (int i = 0; i < inTrack.size(); i++) {
+            MidiMessage msg = inTrack.get(i).getMessage();
+            if (msg instanceof ShortMessage sm
+                    && sm.getCommand() == ShortMessage.NOTE_ON
+                    && sm.getData2() > 0) {
+                return sm.getChannel();
+            }
+        }
+        return null;
     }
 }

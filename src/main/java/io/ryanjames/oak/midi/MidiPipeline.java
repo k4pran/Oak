@@ -41,9 +41,14 @@ public class MidiPipeline {
             throw new IllegalStateException("Failed to transform MIDI sequence", e);
         }
 
-        NoteRangeExtractor.NoteRange noteRange = new NoteRangeExtractor(0).extract(sequence);
+        MidiNoteExtractor.Result inputNoteInfo = MidiNoteExtractor.extractFirstTrackWithNotes(sequence);
 
-        new Transposer(0, noteRange.lowest(), noteRange.highest(), Ocarinas.C_SOPRANO).transform(sequence);
+        new Transposer(
+                inputNoteInfo.trackIndex(),
+                inputNoteInfo.lowestNote(),
+                inputNoteInfo.highestNote(),
+                Ocarinas.C_SOPRANO
+        ).transform(sequence);
 
         MidiNoteExtractor.Result noteInfo = MidiNoteExtractor.extractFirstTrackWithNotes(sequence);
 
