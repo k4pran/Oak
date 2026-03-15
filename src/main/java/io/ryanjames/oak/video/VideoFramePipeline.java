@@ -33,14 +33,6 @@ public class VideoFramePipeline {
 
         List<Double> durations = getFrameDurations(midiFile, noteInfo.onNotes(), noteInfo.offNotes());
 
-        double initialFrameDuration = 2000.;
-        durations.addFirst(initialFrameDuration);
-
-        if (durations.size() < imageFrames.size()) { // TODO this is a hack to fix a bug where the last frame duration is missing
-            LOG.warn("Frame durations list is shorter than image frames list. Adding last frame duration manually.");
-            durations.add(2000.); // Add 2 seconds for the last frame duration
-        }
-
         List<BufferedImage> videoFrames = createVideoFrames(imageFrames, durations);
 
         return new VideoFramePipeline.Result(videoFrames, durations);
@@ -63,7 +55,8 @@ public class VideoFramePipeline {
     protected List<Double> getFrameDurations(MidiFile midiFile, List<MidiNote> midiNotes, List<MidiNote> offNotes) {
         // Intro frame durations
         List<Double> frameDurations = new ArrayList<>(Collections.nCopies(CustomText.getVideoIntroText().size(),
-                SECOND_AS_MS * midiFile.getTicksInMs()));
+                (2000. + (midiNotes.getFirst().getTick() * midiFile.getTicksInMs()))));
+        frameDurations.add(1000.);
 
         // Played note frame durations
         List<Double> durations = TempoAwareDurations.extractDurations(midiFile.getSequence(),
@@ -73,6 +66,8 @@ public class VideoFramePipeline {
         // Outro frame durations
         frameDurations.addAll(Collections.nCopies(CustomText.getVideoOutroText().size(),
                 SECOND_AS_MS * midiFile.getTicksInMs()));
+
+        frameDurations.add(2000.);
         return frameDurations;
     }
 

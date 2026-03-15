@@ -15,7 +15,7 @@ public class OcarinaRanges {
     public static int getUpperRange(Ocarinas ocarina) {
         switch(ocarina) {
             case C_SOPRANO:
-                return 89;
+                return 101;
 
             default:
                 return 0;

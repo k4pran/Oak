@@ -29,12 +29,13 @@ public class VideoOutputPipeline {
         VideoConfig videoConfig = globalConfig.videoConfig();
 
         // Sum the initial frame duration + all intro text frame durations to get the audio offset
-        int preNoteFrames = 1 + CustomText.getVideoIntroText().size(); // 1 for initial frame + intro text frames
-        double audioOffset = videoConfig.getAudioOffset();
-        for(int i = 0; i < preNoteFrames && i < frameDurations.size(); i++) {
-            audioOffset += frameDurations.get(i) / SECOND_AS_MS;
-        }
+//        int preNoteFrames = 1 + CustomText.getVideoIntroText().size(); // 1 for initial frame + intro text frames
+//        int preNoteFrames = 1; // 1 for initial frame + intro text frames
+//        double audioOffset = videoConfig.getAudioOffset() + ((750 * 1.0416666666666667) / SECOND_AS_MS);
+//        for(int i = 0; i < preNoteFrames && i < frameDurations.size(); i++) {
+//            audioOffset += frameDurations.get(i) / SECOND_AS_MS;
+//        }
         ffMpeg.outputTutorial(videoFrames, outputDir, audioFile.getAbsolutePath(),
-                videoConfig.getFramerate(), audioOffset);
+                videoConfig.getFramerate(), 3000. / SECOND_AS_MS);
     }
 }
