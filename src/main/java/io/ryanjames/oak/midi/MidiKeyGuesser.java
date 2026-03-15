@@ -193,6 +193,10 @@ public final class MidiKeyGuesser {
             this.source = source;
         }
 
+        public int getKeyIndex() {
+            return keyIndex;
+        }
+
         public String render() {
             String name = KEY_NAMES[keyIndex] + (minor ? " minor" : " major");
             if (source == KeySource.GUESS) {
